@@ -30,6 +30,8 @@ public partial class Player : CharacterBody2D, IDamageable
     /// <summary>Left or right; the class ability and effects aim this way.</summary>
     public Vector2 Facing { get; private set; } = Vector2.Right;
     public float AbilityCooldownRemaining => _abilityTimer;
+    /// <summary>The class's default attack name, e.g. "Cane Sweep" (readable from GDScript).</summary>
+    public string AttackName => Class?.AttackName ?? "";
 
     private float _lastY = float.MinValue;
     private float _attackTimer;
@@ -84,19 +86,12 @@ public partial class Player : CharacterBody2D, IDamageable
         Class.UseAbility(this);
     }
 
-    /// <summary>Hits every enemy within AttackReach of the player.</summary>
+    /// <summary>The class's default attack (the Pimp's Cane Sweep).</summary>
     private void Attack()
     {
         _attackTimer = AttackCooldown;
         _look?.PlayAttack();
-        foreach (var node in GetTree().GetNodesInGroup("Enemy"))
-        {
-            if (node is Enemy enemy && enemy.GlobalPosition.DistanceTo(GlobalPosition) <= AttackReach)
-            {
-                enemy.TakeDamage(AttackDamage);
-                OnHitLanded();
-            }
-        }
+        Class.Attack(this);
     }
 
     /// <summary>Hit damage: (base + added) × (1 + increased%), with a crit roll from gear.</summary>

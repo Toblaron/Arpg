@@ -34,7 +34,8 @@ Tools: run_project, get_debug_output, stop_project, launch_editor, create_scene,
 ## Classes
 
 - `scripts/Classes/PlayerClass.cs`: base class + `PlayerClass.Create(id)` registry, and `ClassLook` (drawn character, flips with facing, `PlayAttack`/`PlayAbility` animations).
-- Pimp (`PimpClass`, `PimpLook`, `SlapEffect`): ability Bitch-Slap. Characters are drawn in code with `_Draw()` (no sprite assets yet); the look replaces the placeholder `Body` ColorRect at runtime.
+- `Player.Attack()` calls `Class.Attack(player)` (default: hit all within `AttackReach`); classes override it and `AttackName`.
+- Pimp (`PimpClass`, `PimpLook`, `SlapEffect`, `CaneSweepEffect`): default attack Cane Sweep (front arc, flinch), ability Bitch-Slap. Characters are drawn in code with `_Draw()` (no sprite assets yet); the look replaces the placeholder `Body` ColorRect at runtime.
 - `Player.Facing` is ±X; class abilities aim with it. `Enemy.Stun(seconds, knockback)` dazes and slides an enemy.
 - To check visuals, run a short windowed (not headless) GDScript that saves `get_viewport().get_texture().get_image()` to PNG — it briefly opens a window on the user's screen.
 

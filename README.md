@@ -4,11 +4,11 @@ A side-scrolling beat-'em-up with ARPG loot (prototype), in the style of Final F
 
 ## Classes
 
-Each class has its own look and a unique ability (key **K**).
+Each class has its own look, its own default attack (key **J**) and a unique ability (key **K**).
 
-| Class | Look | Unique ability |
-|---|---|---|
-| **Pimp** | Dark violet zoot suit, matching feathered dapper hat, gold chains and rings, a huge pimp cane | **Bitch-Slap**: a huge backhand to the front. Triple damage, knocks enemies back and stuns them for 1.2 s. 4 s cooldown. |
+| Class | Look | Default attack | Unique ability |
+|---|---|---|---|
+| **Pimp** | Dark violet zoot suit, matching feathered dapper hat, gold chains and rings, a huge pimp cane | **Cane Sweep**: a wide swing of the cane through the front. Long reach, hits everyone in the arc, makes them flinch back. | **Bitch-Slap**: a huge backhand to the front. Triple damage, knocks enemies back and stuns them for 1.2 s. 4 s cooldown. |
 
 ## Enemies
 
@@ -83,11 +83,11 @@ Prices and effects are in `scripts/Shop/ShopCatalog.cs`.
 | Key | Action |
 |---|---|
 | Arrows / WASD | Move (up/down = depth along the street) |
-| J | Attack |
+| J | Default attack (Cane Sweep) |
 | K | Class ability (Bitch-Slap) |
 | I | Inventory (click an item to equip it) |
 
-Classes live in `scripts/Classes/`. To add one: subclass `PlayerClass` (name, ability, cooldown, `UseAbility`), give it a
+Classes live in `scripts/Classes/`. To add one: subclass `PlayerClass` (name, default attack `Attack`/`AttackName`, ability `UseAbility`/`AbilityName`, cooldown), give it a
 `ClassLook` for its appearance, and add its id to `PlayerClass.Create`. The player's class is the `ClassId` setting on
 the Player node.
 

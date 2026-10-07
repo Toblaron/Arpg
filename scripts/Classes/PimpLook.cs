@@ -78,7 +78,7 @@ public partial class PimpLook : ClassLook
         DrawLine(V(-4.5f, -23), V(-12, -37), GoldDark, 0.7f);
     }
 
-    public override void PlayAttack() => SwingArm(0.6f, -1.4f, 0.24f);
+    public override void PlayAttack() => SwingArm(1.3f, -1.9f, 0.3f); // Cane Sweep: back over the shoulder, then wide through the front
 
     public override void PlayAbility()
     {

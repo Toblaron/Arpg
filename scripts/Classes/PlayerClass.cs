@@ -1,4 +1,4 @@
-// PlayerClass.cs – a playable class: its name, its unique ability and how it looks.
+// PlayerClass.cs – a playable class: its name, its default attack, its unique ability and how it looks.
 // Add a class by subclassing PlayerClass and adding its id to Create().
 using System;
 using Godot;
@@ -9,6 +9,21 @@ public abstract class PlayerClass
     public abstract string DisplayName { get; }
     public abstract string AbilityName { get; }
     public abstract float AbilityCooldown { get; }
+    /// <summary>Name of the default attack (the "attack" input action).</summary>
+    public virtual string AttackName => "Attack";
+
+    /// <summary>The default attack. Base version: hit every enemy within the player's AttackReach.</summary>
+    public virtual void Attack(Player player)
+    {
+        foreach (var node in player.GetTree().GetNodesInGroup("Enemy"))
+        {
+            if (node is Enemy enemy && enemy.GlobalPosition.DistanceTo(player.GlobalPosition) <= player.AttackReach)
+            {
+                enemy.TakeDamage(player.AttackDamage);
+                player.OnHitLanded();
+            }
+        }
+    }
 
     /// <summary>Runs the class's unique ability (bound to the "ability" input action).</summary>
     public abstract void UseAbility(Player player);

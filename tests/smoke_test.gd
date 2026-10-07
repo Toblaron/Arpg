@@ -108,6 +108,27 @@ func _run() -> void:
 	var ability_label: Label = level.get_node("UI/AbilityUI")
 	_check(ability_label.text.begins_with("Bitch-Slap"), "ability UI shows Bitch-Slap (got '%s')" % ability_label.text)
 
+	# Cane Sweep (J): the Pimp's default attack hits in front, not behind, and makes them flinch back.
+	park_all.call()
+	await _wait_physics(2)
+	var s_front: Node2D = by_type["thug"]
+	var s_back: Node2D = by_type["baller"]
+	s_front.get_node("Health").call("Reset", 1000.0)
+	s_back.get_node("Health").call("Reset", 1000.0)
+	s_front.global_position = player.global_position + Vector2(44, 6)
+	s_back.global_position = player.global_position + Vector2(-44, 6)
+	await _wait_physics(1)
+	var sweep_x := s_front.global_position.x
+	_check(player.get("AttackName") == "Cane Sweep", "default attack is Cane Sweep (got '%s')" % player.get("AttackName"))
+	await _press("attack")
+	await _wait_physics(4)
+	_check(_hp(s_front) < 1000.0, "Cane Sweep hit the enemy in front (%.0f/1000)" % _hp(s_front))
+	_check(s_front.global_position.x > sweep_x + 1.0, "Cane Sweep pushed the enemy back (%.1f px)" % (s_front.global_position.x - sweep_x))
+	_check(is_equal_approx(_hp(s_back), 1000.0), "Cane Sweep missed the enemy behind")
+	s_front.get_node("Health").call("Reset", 60.0)
+	s_back.get_node("Health").call("Reset", 45.0)
+	await create_timer(0.5).timeout
+
 	# Bitch-Slap: hits the enemy in front (damage, knockback, stun), not the one behind.
 	park_all.call()
 	await _wait_physics(2)
@@ -161,7 +182,7 @@ func _run() -> void:
 		if alive.is_empty():
 			break
 		for i in alive.size():
-			alive[i].global_position = player.global_position + Vector2.from_angle(TAU * i / alive.size()) * 32.0
+			alive[i].global_position = player.global_position + Vector2(30.0, -16.0 + 32.0 * i / max(1, alive.size() - 1))
 		await _press("attack")
 		await create_timer(0.45).timeout  # longer than the attack cooldown
 	await _wait_physics(3)
@@ -240,7 +261,7 @@ func _run() -> void:
 		if alive.is_empty():
 			break
 		for i in alive.size():
-			alive[i].global_position = player.global_position + Vector2.from_angle(TAU * i / alive.size()) * 32.0
+			alive[i].global_position = player.global_position + Vector2(30.0, -16.0 + 32.0 * i / max(1, alive.size() - 1))
 		await _press("attack")
 		await create_timer(0.45).timeout
 	await _wait_physics(3)

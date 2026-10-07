@@ -1,10 +1,16 @@
-// PimpClass.cs – the Pimp. Unique ability: Bitch-Slap, a huge backhand to the front that
-// hits every enemy in reach for triple damage, knocks them back and stuns them.
+// PimpClass.cs – the Pimp. Default attack: Cane Sweep, a wide swing of his huge cane that hits
+// everyone in front of him and makes them flinch back. Unique ability: Bitch-Slap, a huge backhand
+// to the front that hits every enemy in reach for triple damage, knocks them back and stuns them.
 using Godot;
 
 public sealed class PimpClass : PlayerClass
 {
     public const string ClassId = "pimp";
+
+    public const float SweepReach = 58f;          // the cane is long
+    public const float SweepArc = -0.25f;         // dot product: > -0.25 ≈ the front 210°
+    public const float SweepFlinch = 0.15f;       // seconds
+    public const float SweepKnockback = 140f;     // px/s
 
     public const float SlapReach = 72f;
     public const float SlapDamageMultiplier = 3f;
@@ -15,9 +21,30 @@ public sealed class PimpClass : PlayerClass
     public override string Id => ClassId;
     public override string DisplayName => "Pimp";
     public override string AbilityName => "Bitch-Slap";
+    public override string AttackName => "Cane Sweep";
     public override float AbilityCooldown => 4f;
 
     public override ClassLook CreateLook() => new PimpLook { Name = "Look" };
+
+    public override void Attack(Player player)
+    {
+        Vector2 origin = player.GlobalPosition;
+        int hits = 0;
+        foreach (var node in player.GetTree().GetNodesInGroup("Enemy"))
+        {
+            if (node is not Enemy enemy || enemy.IsQueuedForDeletion()) continue;
+            Vector2 to = enemy.GlobalPosition - origin;
+            if (to.Length() > SweepReach) continue;
+            Vector2 dir = to.LengthSquared() > 1f ? to.Normalized() : player.Facing;
+            if (dir.Dot(player.Facing) < SweepArc) continue;
+
+            enemy.Stun(SweepFlinch, dir * SweepKnockback);
+            enemy.TakeDamage(player.AttackDamage);
+            player.OnHitLanded();
+            hits++;
+        }
+        CaneSweepEffect.Spawn(player, hits > 0);
+    }
 
     public override void UseAbility(Player player)
     {
