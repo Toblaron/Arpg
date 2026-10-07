@@ -1,10 +1,10 @@
 # Løvstakken
 
-A side-scrolling ARPG brawler (prototype). Pick a class, crack heads, grab loot.
+A side-scrolling beat-'em-up with ARPG loot (prototype), in the style of Final Fight and Turtles in Time. Pick a class, walk the street, crack heads, grab loot.
 
 ## Classes
 
-Each class has its own look and a unique ability (key **K**). Melee attack is **J**, move with arrows or WASD.
+Each class has its own look and a unique ability (key **K**).
 
 | Class | Look | Unique ability |
 |---|---|---|
@@ -27,9 +27,8 @@ Every enemy shows its name above its head. Skin tones are random per enemy.
 
 ### Waves
 
-Enemies come in waves from the screen edges. Wave 1 is 3 enemies and each wave adds one (up to 14), with +8% enemy
-health per wave and better loot every second wave. The next wave starts 3 s after the last enemy dies. Tougher types
-unlock as you go:
+Enemies come in waves at each fight zone (see Stage). Wave 1 is 3 enemies and each wave adds one (up to 12), with
++8% enemy health per wave and better loot every second wave. Tougher types unlock as you go:
 
 | Wave | New arrivals |
 |---|---|
@@ -41,6 +40,26 @@ unlock as you go:
 
 Enemies live in `scripts/Enemies/`: stats in `EnemyType.cs`, looks in `EnemyLook.cs`, waves in `WaveSpawner.cs` (wave
 sizes and timings are settings on the `WaveSpawner` node in `Level.tscn`).
+
+## Stage
+
+A belt-scrolling street brawler in the style of Final Fight and Turtles in Time. Stage 1 is a night-time street under
+Løvstakken: walk right along the sidewalk and road (up/down moves in depth), the camera follows and never scrolls back.
+
+- **Fight zones:** at four points the screen locks and enemies come in from both sides: 1, 2, 2 and 3 waves (8 in all).
+  Beat them and a blinking **GO →** sends you on.
+- **Stage clear:** reach the Løvstakkveien sign at the end of the street.
+- The street, buildings, neon signs and the mountain (scrolling slower, for depth) are drawn in code in
+  `scripts/Stage/StreetBackdrop.cs`. Fight zone positions and wave counts are settings on the `StageDirector` node.
+
+## Controls
+
+| Key | Action |
+|---|---|
+| Arrows / WASD | Move (up/down = depth along the street) |
+| J | Attack |
+| K | Class ability (Bitch-Slap) |
+| I | Inventory (click an item to equip it) |
 
 Classes live in `scripts/Classes/`. To add one: subclass `PlayerClass` (name, ability, cooldown, `UseAbility`), give it a
 `ClassLook` for its appearance, and add its id to `PlayerClass.Create`. The player's class is the `ClassId` setting on

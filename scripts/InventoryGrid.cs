@@ -9,6 +9,8 @@ public partial class InventoryGrid : GridContainer
     [Export] public int SlotCount { get; set; } = 40;
     [Export] public Tooltip Tooltip { get; set; }
     [Export] public EquipmentComponent Equipment { get; set; }
+    /// <summary>Hidden until the player presses the "inventory" action (I), so it doesn't cover the street.</summary>
+    [Export] public bool StartHidden { get; set; } = true;
 
     public event Action Changed;
 
@@ -29,6 +31,15 @@ public partial class InventoryGrid : GridContainer
             _cells.Add(cell);
         }
         Refresh();
+        if (StartHidden) Hide();
+    }
+
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (!e.IsActionPressed("inventory")) return;
+        Visible = !Visible;
+        if (!Visible) Tooltip?.Hide();
+        GetViewport().SetInputAsHandled();
     }
 
     public ItemInstance GetItem(int index) => index >= 0 && index < SlotCount ? Items[index] : null;

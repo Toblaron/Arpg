@@ -8,7 +8,7 @@ public sealed class PimpClass : PlayerClass
 
     public const float SlapReach = 72f;
     public const float SlapDamageMultiplier = 3f;
-    public const float SlapKnockback = 420f;   // px/s at the moment of impact
+    public const float SlapKnockback = 300f;   // px/s at the moment of impact
     public const float SlapStun = 1.2f;        // seconds
     private const float FrontArc = 0.2f;       // dot product: >0.2 ≈ within 78° of facing
 

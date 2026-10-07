@@ -22,8 +22,8 @@ public partial class Item : Area2D
         _label = GetNodeOrNull<Label>("Label");
         if (_label == null)
         {
-            _label = new Label { Name = "Label", HorizontalAlignment = HorizontalAlignment.Center, Position = new Vector2(-60, -28), Size = new Vector2(120, 20) };
-            _label.AddThemeFontSizeOverride("font_size", 11);
+            _label = new Label { Name = "Label", HorizontalAlignment = HorizontalAlignment.Center, Position = new Vector2(-60, -18), Size = new Vector2(120, 10) };
+            _label.AddThemeFontSizeOverride("font_size", 6);
             AddChild(_label);
         }
         Refresh();

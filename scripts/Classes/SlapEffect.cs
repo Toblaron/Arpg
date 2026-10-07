@@ -23,23 +23,23 @@ public partial class SlapEffect : Node2D
             Text = landed ? "SLAP!" : "swish",
             LabelSettings = new LabelSettings
             {
-                FontSize = landed ? 22 : 13,
+                FontSize = landed ? 12 : 8,
                 FontColor = landed ? PimpLook.Gold : new Color(1, 1, 1, 0.8f),
-                OutlineSize = landed ? 6 : 3,
+                OutlineSize = landed ? 4 : 2,
                 OutlineColor = PimpLook.SuitDark,
             },
-            Position = player.GlobalPosition + new Vector2(-30, -62),
-            Size = new Vector2(60, 30),
+            Position = player.GlobalPosition + new Vector2(-30, -56),
+            Size = new Vector2(60, 18),
             HorizontalAlignment = HorizontalAlignment.Center,
             ZIndex = (int)RenderingServer.CanvasItemZMax,
             MouseFilter = Control.MouseFilterEnum.Ignore,
-            PivotOffset = new Vector2(30, 15),
+            PivotOffset = new Vector2(30, 9),
         };
         world.AddChild(text);
         var t = text.CreateTween();
         t.TweenProperty(text, "scale", new Vector2(1.3f, 1.3f), 0.08f);
         t.TweenProperty(text, "scale", Vector2.One, 0.1f);
-        t.Parallel().TweenProperty(text, "position:y", text.Position.Y - 24f, 0.6f);
+        t.Parallel().TweenProperty(text, "position:y", text.Position.Y - 14f, 0.6f);
         t.TweenProperty(text, "modulate:a", 0f, 0.25f);
         t.TweenCallback(Callable.From(text.QueueFree));
     }

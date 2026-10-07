@@ -1,5 +1,6 @@
 # smoke_test.gd – plays the main level without a window and checks the core loop works:
-# scene loads, UI is wired, every enemy type spawns with its look, waves start and advance, the Pimp's Bitch-Slap,
+# scene loads, UI is wired, every enemy type spawns with its look, the belt-scroller stage
+# (camera, street bounds, fight zones, waves), the Pimp's Bitch-Slap,
 # ranged and charging enemies, melee kills, loot drops, pickup fills the inventory, equip.
 #
 # Run from the project folder (build the C# first):
@@ -30,6 +31,16 @@ func _press(action: String) -> void:
 	Input.action_release(action)
 
 
+# Sends a real input event (for nodes that react in _input/_unhandled_input, like the inventory).
+func _tap_event(action: String) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventAction.new()
+		ev.action = action
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		await process_frame
+
+
 func _alive(group: String) -> Array:
 	return get_nodes_in_group(group).filter(func(e): return is_instance_valid(e) and not e.is_queued_for_deletion())
 
@@ -53,7 +64,6 @@ func _run() -> void:
 
 	var level: Node = load("res://scenes/Level.tscn").instantiate()
 	var spawner: Node = level.get_node("WaveSpawner")
-	spawner.set("AutoStart", false)  # the test spawns enemies itself, then checks waves at the end
 	root.add_child(level)
 	current_scene = level
 	await _wait_physics(3)
@@ -82,9 +92,11 @@ func _run() -> void:
 
 	# From here the player is made unkillable so a death reload can't end the test early.
 	player.get_node("Health").call("Reset", 100000.0)
+	# Park everyone far away, spaced apart (stacked bodies shove each other around).
 	var park_all := func():
-		for e in _alive("Enemy"):
-			e.global_position = player.global_position + FAR
+		var alive := _alive("Enemy")
+		for i in alive.size():
+			alive[i].global_position = player.global_position + FAR + Vector2(i * 120.0, 0)
 
 	# Class: the Pimp's look replaces the placeholder box, and the UI names his ability.
 	_check(player.get_node_or_null("Look") != null and player.get_node_or_null("Body") == null,
@@ -94,6 +106,7 @@ func _run() -> void:
 
 	# Bitch-Slap: hits the enemy in front (damage, knockback, stun), not the one behind.
 	park_all.call()
+	await _wait_physics(2)
 	var front: Node2D = by_type["playa"]
 	var behind: Node2D = by_type["skank"]
 	front.get_node("Health").call("Reset", 1000.0)  # survive the slap so we can see the knockback
@@ -113,6 +126,7 @@ func _run() -> void:
 
 	# Drug Dealer: keeps his distance and throws bottles that hurt.
 	park_all.call()
+	await _wait_physics(2)
 	var dealer: Node2D = by_type["drug_dealer"]
 	dealer.global_position = player.global_position + Vector2(200, 0)
 	var hp_before := _hp(player)
@@ -122,10 +136,11 @@ func _run() -> void:
 		saw_bottle = saw_bottle or not _alive("EnemyProjectile").is_empty()
 	_check(saw_bottle, "Drug Dealer threw a bottle")
 	_check(_hp(player) < hp_before, "a bottle hit the player (%.0f damage)" % (hp_before - _hp(player)))
-	_check(dealer.global_position.distance_to(player.global_position) > 120.0, "Drug Dealer kept his distance")
+	_check(dealer.global_position.distance_to(player.global_position) > 90.0, "Drug Dealer kept his distance")
 
 	# G: winds up, then charges.
 	park_all.call()
+	await _wait_physics(2)
 	var g: Node2D = by_type["g"]
 	g.global_position = player.global_position + Vector2(160, 0)
 	var charged := false
@@ -173,13 +188,43 @@ func _run() -> void:
 		await _wait_physics(2)
 		_check(slot.text == "", "clicking the slot equipped the item (slot is now empty)")
 
-	# Waves: wave 1 sends 3 enemies; killing them all clears it and wave 2 (4 enemies) follows.
+	# Stage: Final Fight-style camera, street bounds and fight zones.
+	var director: Node = level.get_node("StageDirector")
+	var cam: Camera2D = level.get_node("Camera2D")
 	var wave_label: Label = level.get_node("UI/WaveUI").get_child(0)
-	spawner.call("StartNextWave")
+	var floor_top: float = director.get("FloorTop")
+	player.global_position = Vector2(player.global_position.x, 40.0)  # try to stand in the buildings
+	await _wait_physics(2)
+	_check(player.global_position.y >= floor_top - 0.5, "player can't leave the street (y %.0f, top %.0f)" % [player.global_position.y, floor_top])
+
+	director.call("WarpTo", 800.0)
+	await _wait_physics(2)
+	var cam_x := cam.global_position.x
+	_check(cam_x > 500.0, "camera scrolled with the player (x %.0f)" % cam_x)
+	Input.action_press("ui_left")
+	await create_timer(0.8).timeout
+	Input.action_release("ui_left")
+	await _wait_physics(2)
+	_check(is_equal_approx(cam.global_position.x, cam_x), "camera never scrolls back")
+	_check(player.global_position.x >= cam_x - 288.0 + 20.0, "player can't walk off the left edge (x %.0f)" % player.global_position.x)
+
+	# Fight zone 1: the screen locks and wave 1 (3 enemies) comes in from the sides.
+	var zones: Array = director.get("EncounterAt")
+	director.call("WarpTo", zones[0] + 5.0)
+	await _wait_physics(2)
+	_check(director.get("Locked"), "screen locked at the first fight zone")
 	_check(spawner.get("CurrentWave") == 1 and spawner.get("Remaining") == 3, "wave 1 started with 3 enemies")
+	var locked_x := cam.global_position.x
 	await create_timer(2.5).timeout  # they enter one by one
 	_check(_alive("Enemy").size() == 3, "wave 1 enemies entered (%d)" % _alive("Enemy").size())
 	_check(wave_label.text.begins_with("WAVE 1"), "wave counter shows '%s'" % wave_label.text)
+	var view_left := locked_x - 288.0
+	_check(_alive("Enemy").all(func(e): return e.global_position.y >= floor_top - 0.5), "enemies stay on the street")
+	Input.action_press("ui_right")
+	await create_timer(0.6).timeout
+	Input.action_release("ui_right")
+	_check(is_equal_approx(cam.global_position.x, locked_x), "camera stays locked during the fight")
+	_check(player.global_position.x <= locked_x + 288.0 - 20.0, "player can't leave the locked screen")
 	for swing in 20:
 		var alive := _alive("Enemy")
 		if alive.is_empty():
@@ -189,9 +234,38 @@ func _run() -> void:
 		await _press("attack")
 		await create_timer(0.45).timeout
 	await _wait_physics(3)
-	_check(spawner.get("BetweenWaves"), "wave 1 cleared, break before the next wave")
-	await create_timer(3.2).timeout
-	_check(spawner.get("CurrentWave") == 2 and spawner.get("Remaining") == 4, "wave 2 started with 4 enemies (wave %d, %d left)" % [spawner.get("CurrentWave"), spawner.get("Remaining")])
+	_check(not director.get("Locked"), "clearing the fight unlocks the screen")
+	_check(director.get("ShowGo"), "GO -> is shown")
+
+	# Fight zone 2 sends the next wave (4 enemies).
+	director.call("WarpTo", zones[1] + 5.0)
+	await _wait_physics(2)
+	_check(director.get("Locked") and spawner.get("CurrentWave") == 2 and spawner.get("Remaining") == 4,
+		"second fight zone sends wave 2 with 4 enemies (wave %d, %d left)" % [spawner.get("CurrentWave"), spawner.get("Remaining")])
+
+	# Play out the rest of the street: every fight zone, then the stage is cleared at the end.
+	for z in range(1, zones.size()):
+		director.call("WarpTo", zones[z] + 5.0)
+		for f in 3:
+			await physics_frame
+		var guard := 0
+		while director.get("Locked") and guard < 120:
+			guard += 1
+			await create_timer(0.3).timeout
+			for e in _alive("Enemy"):
+				e.call("TakeDamage", 99999.0)
+	_check(spawner.get("CurrentWave") == 8, "all fight zones played: 8 waves (got %d)" % spawner.get("CurrentWave"))
+	director.call("WarpTo", float(director.get("StageLength")) - 100.0)
+	for f in 3:
+		await physics_frame
+	_check(director.get("Cleared"), "reaching the end of the street clears the stage")
+
+	# Inventory is hidden during play and toggles with I.
+	_check(not inventory.visible, "inventory starts hidden")
+	await _tap_event("inventory")
+	_check(inventory.visible, "I opens the inventory")
+	await _tap_event("inventory")
+	_check(not inventory.visible, "I closes the inventory")
 
 	print("SMOKE TEST %s (%d failed)" % ["PASSED" if _failures == 0 else "FAILED", _failures])
 	quit(0 if _failures == 0 else 1)

@@ -16,8 +16,8 @@ public partial class Enemy : CharacterBody2D, IDamageable
     public EnemyType Type { get; private set; }
     public Health Health { get; private set; }
 
-    private const float RangedKeepMin = 150f, RangedKeepMax = 230f;
-    private const float ChargeTrigger = 190f, ChargeWindup = 0.55f, ChargeSpeed = 420f, ChargeTime = 0.4f;
+    private const float RangedKeepMin = 110f, RangedKeepMax = 170f;
+    private const float ChargeTrigger = 150f, ChargeWindup = 0.55f, ChargeSpeed = 330f, ChargeTime = 0.4f;
 
     private Player _target;
     private EnemyLook _look;
@@ -59,11 +59,11 @@ public partial class Enemy : CharacterBody2D, IDamageable
         var nameTag = new Label
         {
             Text = Type.DisplayName,
-            Position = new Vector2(-50, -42),
-            Size = new Vector2(100, 14),
+            Position = new Vector2(-50, -38),
+            Size = new Vector2(100, 10),
             HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore,
-            LabelSettings = new LabelSettings { FontSize = 9, FontColor = new Color(1, 1, 1, 0.75f), OutlineSize = 3, OutlineColor = new Color(0, 0, 0, 0.6f) },
+            LabelSettings = new LabelSettings { FontSize = 6, FontColor = new Color(1, 1, 1, 0.75f), OutlineSize = 2, OutlineColor = new Color(0, 0, 0, 0.6f) },
         };
         AddChild(nameTag);
         _time = Seed01() * 10f;
@@ -82,6 +82,7 @@ public partial class Enemy : CharacterBody2D, IDamageable
             Velocity = _knockback;
             _knockback = _knockback.MoveToward(Vector2.Zero, 1200f * dt);
             MoveAndSlide();
+            GlobalPosition = PlayBounds.ClampDepth(GlobalPosition);
             YSort.Update(this, ref _lastY);
             return;
         }
@@ -97,6 +98,7 @@ public partial class Enemy : CharacterBody2D, IDamageable
             default: ChaseAndHit(toTarget, toTarget.Normalized()); break;
         }
         MoveAndSlide();
+        GlobalPosition = PlayBounds.ClampDepth(GlobalPosition); // stay on the street
         _look.SetFacing(toTarget.X);
         _look.SetMoving(Velocity.LengthSquared() > 1f);
         YSort.Update(this, ref _lastY);

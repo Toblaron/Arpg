@@ -1,6 +1,6 @@
 # Løvstakken – notes for Claude
 
-Godot 4.7.2 .NET (C#) side-scrolling brawler with D2/PoE-style loot and playable classes. See README.md for the game design.
+Godot 4.7.2 .NET (C#) belt-scrolling beat-'em-up (Final Fight / Turtles in Time style — NOT a single-screen arena) with D2/PoE-style loot and playable classes. See README.md for the game design.
 
 ## Tools on this machine
 
@@ -24,7 +24,7 @@ Tools: run_project, get_debug_output, stop_project, launch_editor, create_scene,
 
 ## Scene conventions
 
-- Scenes live in `scenes/`: `Player.tscn`, `Enemy.tscn`, `Level.tscn` (main scene: floor, player, `WaveSpawner`, `UI` CanvasLayer).
+- Scenes live in `scenes/`: `Player.tscn`, `Enemy.tscn`, `Level.tscn` (main scene: `Backdrop`, player, `Camera2D` (zoom 2), `WaveSpawner`, `StageDirector`, `UI` CanvasLayer).
 - C# classes are not `[GlobalClass]`, so in a `.tscn` a scripted node is its base Godot type plus `script = ExtResource(...)` (e.g. Health = `Node` + Health.cs).
 - Scripts look up children by exact name (`Health`, `Equipment`, `Hurtbox`, `LootDrop`, `Inventory`) — keep names.
 - Node-typed `[Export]` properties are saved as `NodePath` with `node_paths=PackedStringArray(...)` on the node header (see `Level.tscn` UI).
@@ -41,11 +41,18 @@ Tools: run_project, get_debug_output, stop_project, launch_editor, create_scene,
 ## Enemies
 
 - `scripts/Enemies/EnemyType.cs`: roster (stats, `EnemyBehaviour` Melee/Erratic/Ranged/Charger, loot bonuses), keyed by id. `Enemy.TypeId` (export) picks one.
-- `WaveSpawner.cs` (node in `Level.tscn`) spawns all enemies: unlock table `Pool`, `Spawn(typeId, at)` for scripted spawns, `StartNextWave()`. The level has no hand-placed enemies. `WaveUI.cs` shows the counter/banners. Tests set `AutoStart = false` before adding the level to the tree.
+- `WaveSpawner.cs` spawns all enemies when the `StageDirector` calls `StartEncounter(waves)`; they enter from the left/right screen edges inside the street strip. Unlock table `Pool`; `Spawn(typeId, at)` for scripted spawns. The level has no hand-placed enemies. `WaveUI.cs` shows the counter, banners and GO arrow.
 - `EnemyLook.cs`: one `Draw<Type>()` per enemy on a shared body frame; front arm swings via `ArmAngle`. Skin tone is random per enemy, never tied to type.
 - `EnemyProjectile.cs`: Drug Dealer bottles (group "EnemyProjectile").
 - Adding an enemy: entry in `EnemyType.All`, a case in `EnemyLook._Draw`, a row in `WaveSpawner.Pool`, the id in `ENEMY_TYPES` in `tests/smoke_test.gd`.
 
+## Stage (belt scroller)
+
+- `scripts/Stage/StageDirector.cs`: camera follows the player right only; `EncounterAt` x positions lock the screen and start `EncounterWaves`; `StageCleared` at `StageLength`. `WarpTo(x)` jumps ahead (tests/debug) — wait ~3 physics frames after it before checking `Locked`.
+- `PlayBounds` (static, same file): walkable strip `FloorTop..FloorBottom` (sidewalk + road) and the screen's left/right edges. Player is clamped to both, enemies to depth only. Anything that moves characters must respect it.
+- World units: the camera zooms 2x, so the screen shows 576x324 world px. Design screen 1152x648 (project setting, stretch `canvas_items`). Use `PlayBounds.ScreenSize`, not `GetViewportRect()` (the headless/window size can differ).
+- `StreetBackdrop.cs`: sky (fixed), Løvstakken mountain (parallax 0.15), street layer — drawn at 0.5 scale in 1152x648 design units.
+
 ## Input actions (project.godot)
 
-Movement: built-in `ui_left/right/up/down` (arrows + WASD). `attack` = J, `ability` = K (class ability). Add new actions through a headless GDScript that edits `ProjectSettings` and calls `ProjectSettings.save()`, rather than hand-writing InputEvent objects.
+Movement: built-in `ui_left/right/up/down` (arrows + WASD). `attack` = J, `ability` = K (class ability), `inventory` = I (toggles the hidden inventory). Add new actions through a headless GDScript that edits `ProjectSettings` and calls `ProjectSettings.save()`, rather than hand-writing InputEvent objects.

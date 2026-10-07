@@ -10,7 +10,7 @@ public partial class Player : CharacterBody2D, IDamageable
     public const uint PlayerLayer = 1 << 1;
     public const uint EnemyHitboxLayer = 1 << 2;
 
-    [Export] public float Speed { get; set; } = 200f;
+    [Export] public float Speed { get; set; } = 160f;
     [Export] public float BaseDamage { get; set; } = 10f;
     [Export] public float AttackReach { get; set; } = 48f;
     [Export] public float AttackCooldown { get; set; } = 0.4f;
@@ -57,6 +57,7 @@ public partial class Player : CharacterBody2D, IDamageable
         Vector2 input = Input.GetVector("ui_left", "ui_right", "ui_up", "ui_down");
         Velocity = input * CurrentSpeed; // GetVector is already length-limited to 1
         MoveAndSlide();
+        GlobalPosition = PlayBounds.ClampPlayer(GlobalPosition); // stay on the street and on screen
         YSort.Update(this, ref _lastY);
         if (input.X != 0f) Facing = new Vector2(Mathf.Sign(input.X), 0f);
         _look?.SetFacing(Facing.X);
