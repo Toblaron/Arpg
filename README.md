@@ -10,7 +10,7 @@ agents in [agent-collab](https://github.com/Toblaron/Agent-collab). Engine: **Go
 
 | Folder | Contents |
 |---|---|
-| `scripts/` | 34 C# scripts: entities and Y-sorting, player movement, enemies, health and UI, items, affixes and loot, inventory/equipment, save/load, skills, projectiles and pooling, spatial grid, animation wrappers |
+| `scripts/` | 31 C# scripts: entities and Y-sorting, player movement, enemies, health and UI, items, affixes and loot, inventory/equipment, save/load, skills, projectiles and pooling, spatial grid, animation wrappers |
 | `drafts/scenes/` | Scene sketches (`.tscn`). They are simplified and **not valid Godot scenes**: rebuild them in the editor using these as a guide |
 | `drafts/snippets/` | Partial code the agents wrote as examples (wiring the inventory UI, a save/load manager) |
 
