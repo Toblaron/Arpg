@@ -14,16 +14,31 @@ public partial class Player : CharacterBody2D, IDamageable
     [Export] public float BaseDamage { get; set; } = 10f;
     [Export] public float AttackReach { get; set; } = 48f;
     [Export] public float AttackCooldown { get; set; } = 0.4f;
+    /// <summary>Which playable class this is (see PlayerClass.Create), e.g. "pimp".</summary>
+    [Export] public string ClassId { get; set; } = PimpClass.ClassId;
 
     public Health Health { get; private set; }
     public EquipmentComponent Equipment { get; private set; }
+    public PlayerClass Class { get; private set; }
+    /// <summary>Left or right; the class ability and effects aim this way.</summary>
+    public Vector2 Facing { get; private set; } = Vector2.Right;
+    public float AbilityCooldownRemaining => _abilityTimer;
 
     private float _lastY = float.MinValue;
     private float _attackTimer;
+    private float _abilityTimer;
+    private ClassLook _look;
 
     public override void _Ready()
     {
         AddToGroup("Player");
+        Class = PlayerClass.Create(ClassId);
+        _look = Class.CreateLook();
+        if (_look != null)
+        {
+            GetNodeOrNull("Body")?.QueueFree(); // the placeholder box
+            AddChild(_look);
+        }
         Health = GetNodeOrNull<Health>("Health");
         Equipment = GetNodeOrNull<EquipmentComponent>("Equipment");
         if (Health != null) Health.Died += OnDied;
@@ -43,15 +58,29 @@ public partial class Player : CharacterBody2D, IDamageable
         Velocity = input * CurrentSpeed; // GetVector is already length-limited to 1
         MoveAndSlide();
         YSort.Update(this, ref _lastY);
+        if (input.X != 0f) Facing = new Vector2(Mathf.Sign(input.X), 0f);
+        _look?.SetFacing(Facing.X);
+        _look?.SetMoving(input != Vector2.Zero);
 
         _attackTimer = Mathf.Max(0f, _attackTimer - (float)delta);
+        _abilityTimer = Mathf.Max(0f, _abilityTimer - (float)delta);
         if (Input.IsActionJustPressed("attack") && _attackTimer <= 0f) Attack();
+        if (Input.IsActionJustPressed("ability") && _abilityTimer <= 0f) UseAbility();
+    }
+
+    /// <summary>The class's unique ability (the Pimp's Bitch-Slap).</summary>
+    private void UseAbility()
+    {
+        _abilityTimer = Class.AbilityCooldown;
+        _look?.PlayAbility();
+        Class.UseAbility(this);
     }
 
     /// <summary>Hits every enemy within AttackReach of the player.</summary>
     private void Attack()
     {
         _attackTimer = AttackCooldown;
+        _look?.PlayAttack();
         foreach (var node in GetTree().GetNodesInGroup("Enemy"))
         {
             if (node is Enemy enemy && enemy.GlobalPosition.DistanceTo(GlobalPosition) <= AttackReach)

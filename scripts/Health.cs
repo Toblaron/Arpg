@@ -31,6 +31,14 @@ public partial class Health : Node
         EmitSignal(SignalName.HealthChanged, Current, MaxHealth);
     }
 
+    /// <summary>Set a new maximum and heal to full (e.g. when an enemy type is applied).</summary>
+    public void Reset(float max)
+    {
+        MaxHealth = Mathf.Max(1f, max);
+        Current = MaxHealth;
+        EmitSignal(SignalName.HealthChanged, Current, MaxHealth);
+    }
+
     /// <summary>Raise the maximum (e.g. from gear) keeping the same fraction of health.</summary>
     public void SetMaxHealth(float max)
     {

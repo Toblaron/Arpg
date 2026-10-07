@@ -1,4 +1,53 @@
-# ARPG brawler (prototype)
+# Løvstakken
+
+A side-scrolling ARPG brawler (prototype). Pick a class, crack heads, grab loot.
+
+## Classes
+
+Each class has its own look and a unique ability (key **K**). Melee attack is **J**, move with arrows or WASD.
+
+| Class | Look | Unique ability |
+|---|---|---|
+| **Pimp** | Dark violet zoot suit, matching feathered dapper hat, gold chains and rings, a huge pimp cane | **Bitch-Slap**: a huge backhand to the front. Triple damage, knocks enemies back and stuns them for 1.2 s. 4 s cooldown. |
+
+## Enemies
+
+Every enemy shows its name above its head. Skin tones are random per enemy.
+
+| Enemy | Look | Fights by | HP | Notes |
+|---|---|---|---|---|
+| **Street Hustler** | Flat cap, leather jacket, a sleeve full of gold watches | Fast melee | 22 | Quick, weak hits |
+| **Skank** | Teased blonde hair, gold hoops, leopard jacket, pink skirt, handbag | Melee | 26 | Handbag swings |
+| **Thug** | Hood up, scowl, baseball bat | Slow, heavy melee | 60 | Hits for 14; takes half stun and knockback |
+| **Playa** | White suit, open pink shirt, shades, a rose | Rapid melee | 34 | Attacks every 0.55 s |
+| **Drug Dealer** | Olive puffer, backwards red cap, cross-body bag | Ranged | 26 | Keeps 150–230 px away and throws bottles |
+| **Baller** | Fur coat, heavy gold chains, gold shades, fan of cash | Melee | 45 | Loot piñata: up to 4 drops at +3 item level |
+| **G** | Tank top, tattoos, blue bandana, khakis | Charger | 40 | Glows orange as he winds up, then dashes through you |
+| **Dope Fiend** | Hunched, ragged patched hoodie, torn jeans, twitchy | Erratic | 18 | Zig-zags in, hard to pin down |
+
+### Waves
+
+Enemies come in waves from the screen edges. Wave 1 is 3 enemies and each wave adds one (up to 14), with +8% enemy
+health per wave and better loot every second wave. The next wave starts 3 s after the last enemy dies. Tougher types
+unlock as you go:
+
+| Wave | New arrivals |
+|---|---|
+| 1 | Street Hustler, Skank, Dope Fiend |
+| 2 | Playa |
+| 3 | Thug, Drug Dealer |
+| 4 | G |
+| 5 | Baller (rare) |
+
+Enemies live in `scripts/Enemies/`: stats in `EnemyType.cs`, looks in `EnemyLook.cs`, waves in `WaveSpawner.cs` (wave
+sizes and timings are settings on the `WaveSpawner` node in `Level.tscn`).
+
+Classes live in `scripts/Classes/`. To add one: subclass `PlayerClass` (name, ability, cooldown, `UseAbility`), give it a
+`ClassLook` for its appearance, and add its id to `PlayerClass.Create`. The player's class is the `ClassId` setting on
+the Player node.
+
+## About
+
 
 A side-scrolling beat-'em-up with ARPG loot and depth: Golden Axe / Final Fight combat, Diablo /
 Path of Exile items. Planned by AI agents in [agent-collab](https://github.com/Toblaron/Agent-collab),

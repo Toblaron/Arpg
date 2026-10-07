@@ -1,10 +1,13 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/Enemy.tscn" id="2_enemy"]
 [ext_resource type="Script" uid="uid://c34c1jphojwv2" path="res://scripts/HealthUI.cs" id="3_healthui"]
 [ext_resource type="Script" uid="uid://budtkprnouilm" path="res://scripts/InventoryGrid.cs" id="4_inventory"]
 [ext_resource type="Script" uid="uid://bnlyh23uswkqx" path="res://scripts/Tooltip.cs" id="5_tooltip"]
+[ext_resource type="Script" path="res://scripts/AbilityUI.cs" id="6_abilityui"]
+[ext_resource type="Script" path="res://scripts/Enemies/WaveSpawner.cs" id="7_spawner"]
+[ext_resource type="Script" path="res://scripts/WaveUI.cs" id="8_waveui"]
 
 [node name="Level" type="Node2D"]
 
@@ -17,17 +20,9 @@ color = Color(0.16, 0.16, 0.18, 1)
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(576, 324)
 
-[node name="Enemy" parent="." instance=ExtResource("2_enemy")]
-position = Vector2(150, 150)
-
-[node name="Enemy2" parent="." instance=ExtResource("2_enemy")]
-position = Vector2(1000, 150)
-
-[node name="Enemy3" parent="." instance=ExtResource("2_enemy")]
-position = Vector2(150, 450)
-
-[node name="Enemy4" parent="." instance=ExtResource("2_enemy")]
-position = Vector2(1000, 450)
+[node name="WaveSpawner" type="Node2D" parent="."]
+script = ExtResource("7_spawner")
+EnemyScene = ExtResource("2_enemy")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -46,6 +41,22 @@ offset_top = 16.0
 offset_right = 236.0
 offset_bottom = 40.0
 value = 100.0
+
+[node name="AbilityUI" type="Label" parent="UI" node_paths=PackedStringArray("Player")]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 316.0
+offset_bottom = 67.0
+mouse_filter = 2
+script = ExtResource("6_abilityui")
+Player = NodePath("../../Player")
+
+[node name="WaveUI" type="Control" parent="UI" node_paths=PackedStringArray("Spawner")]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("8_waveui")
+Spawner = NodePath("../../WaveSpawner")
 
 [node name="Inventory" type="GridContainer" parent="UI" node_paths=PackedStringArray("Tooltip", "Equipment")]
 offset_left = 16.0
