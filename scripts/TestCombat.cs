@@ -1,24 +1,21 @@
-// TestCombat.cs
+// TestCombat.cs – fires one projectile with a dummy skill to check the effect wiring.
 using Godot;
-using Game.Combat;
 
 public partial class TestCombat : Node2D
 {
-    [Export] public PackedScene ProjectileScene { get; set; }
+    [Export] public ProjectilePool Pool { get; set; }
 
     public override void _Ready()
     {
-        var proj = (Projectile)ProjectileScene.Instantiate();
-        AddChild(proj);
-
-        // Mock skill
-        var skill = new DummySkill(SkillType.Fireball);
-        proj.Init(skill);
+        if (Pool == null) AddChild(Pool = new ProjectilePool());
+        Pool.Get(new Vector2(100, 300), new Vector2(300, 0), damage: 10f, source: new DummySkill());
     }
 
-    private class DummySkill : ISkill
+    private sealed class DummySkill : ISkill
     {
-        public SkillType Type { get; }
-        public DummySkill(SkillType type) => Type = type;
+        public string Id => "fireball";
+        public SkillType Type => SkillType.Magic;
+        public float Cooldown => 0f;
+        public void Cast(Vector2 from, Vector2 target) { }
     }
 }

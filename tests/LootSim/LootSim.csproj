@@ -1,0 +1,13 @@
+<!-- Loot rules check: rolls 20,000 items and verifies rarity, affix limits, tiers and ranges.
+     Run from the repo root with: dotnet run (project tests/LootSim) -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="GodotSharp" Version="4.7.2" />
+    <Compile Include="../../scripts/ItemCatalog.cs;../../scripts/ItemGenerator.cs;../../scripts/ItemInstance.cs;../../scripts/Stats.cs" />
+  </ItemGroup>
+</Project>

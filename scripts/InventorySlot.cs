@@ -1,16 +1,27 @@
-// InventorySlot.cs
+// InventorySlot.cs – one cell of the inventory grid: shows the item's base name in rarity colour.
+using System;
 using Godot;
 
-public partial class InventorySlot : Control
+public partial class InventorySlot : Button
 {
-    [Export] public int Capacity { get; set; } = 1;
-    [Export] public int StackCount { get; set; } = 1;
-    [Export] public ItemResource Item { get; set; } = null;
+    public int Index { get; set; }
+    public event Action<int> Hovered;
+    public event Action<int> Activated;
 
-    public void AssignItem(ItemResource item)
+    public override void _Ready()
     {
-        Item = item;
-        // Update the slot's visuals and stats
-        // ...
+        CustomMinimumSize = new Vector2(64, 64);
+        ClipText = true;
+        AddThemeFontSizeOverride("font_size", 10);
+        MouseEntered += () => Hovered?.Invoke(Index);
+        MouseExited += () => Hovered?.Invoke(-1);
+        Pressed += () => Activated?.Invoke(Index);
+    }
+
+    public void Display(ItemInstance item)
+    {
+        Text = item?.BaseName ?? "";
+        Modulate = item?.RarityColor ?? Colors.White;
+        TooltipText = ""; // the custom Tooltip panel shows details
     }
 }

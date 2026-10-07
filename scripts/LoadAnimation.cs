@@ -1,4 +1,4 @@
-// LoadAnimation.cs
+// LoadAnimation.cs – plays the "loading" animation.
 using Godot;
 
 public partial class LoadAnimation : Control
@@ -7,6 +7,7 @@ public partial class LoadAnimation : Control
 
     public void PlayAnimation()
     {
-        AnimationPlayer.PlayAnimation("loading");
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation("loading"))
+            AnimationPlayer.Play("loading");
     }
 }

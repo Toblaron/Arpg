@@ -1,0 +1,13 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Arpg</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Sketches and partial examples, not part of the build -->
+    <Compile Remove="drafts/**" />
+    <Compile Remove="tests/**" />
+  </ItemGroup>
+</Project>

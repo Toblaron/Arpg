@@ -1,4 +1,4 @@
-// UIManager.cs
+// UIManager.cs – thin wrapper around an AnimationPlayer so scenes can trigger named animations.
 using Godot;
 
 public partial class UIManager : Control
@@ -7,11 +7,9 @@ public partial class UIManager : Control
 
     public void PlayAnimation(string animationName)
     {
-        AnimationPlayer.Play(animationName);
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation(animationName))
+            AnimationPlayer.Play(animationName);
     }
 
-    public void StopAnimation()
-    {
-        AnimationPlayer.Stop();
-    }
+    public void StopAnimation() => AnimationPlayer?.Stop();
 }

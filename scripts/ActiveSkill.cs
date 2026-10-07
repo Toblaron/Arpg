@@ -1,89 +1,74 @@
-// ActiveSkill.cs
-using Godot;
+// ActiveSkill.cs – skills with cooldowns. Damage scales from the caster's gear.
 using System;
+using Godot;
 
-namespace Game.Combat
+public abstract class ActiveSkill : ISkill
 {
-    /// <summary>
-    /// Base class for any skill that has a cooldown and can be cast.
-    /// </summary>
-    public abstract class ActiveSkill : ISkill
+    public string Id { get; }
+    public SkillType Type { get; }
+    public float Cooldown { get; }
+    public float CooldownRemaining => Math.Max(0f, Cooldown - _sinceLastCast);
+    private float _sinceLastCast;
+
+    protected ActiveSkill(string id, SkillType type, float cooldown)
     {
-        public SkillType Type { get; protected set; }
-        public float Cooldown { get; protected set; }
-        private float _timeSinceLastCast;
-
-        public ActiveSkill(SkillType type, float cooldown)
-        {
-            Type = type;
-            Cooldown = cooldown;
-            _timeSinceLastCast = cooldown; // ready to use
-        }
-
-        /// <summary>
-        /// Returns true if the skill can be cast right now.
-        /// </summary>
-        public bool CanCast() => _timeSinceLastCast >= Cooldown;
-
-        /// <summary>
-        /// Call this every frame to count cooldown.
-        /// </summary>
-        public void Tick(float delta) => _timeSinceLastCast += delta;
-
-        /// <summary>
-        /// Perform the actual casting logic.
-        /// </summary>
-        public void Cast(Vector2 from, Vector2 target)
-        {
-            if (!CanCast()) return;
-            _timeSinceLastCast = 0f;
-            Execute(from, target);
-        }
-
-        protected abstract void Execute(Vector2 from, Vector2 target);
+        Id = id;
+        Type = type;
+        Cooldown = cooldown;
+        _sinceLastCast = cooldown; // ready immediately
     }
 
-    // Example: a simple fireball skill
-    public class FireballSkill : ActiveSkill
+    public bool CanCast() => _sinceLastCast >= Cooldown;
+
+    public void Tick(float delta) => _sinceLastCast += delta;
+
+    public void Cast(Vector2 from, Vector2 target)
     {
-        private readonly ProjectilePool _pool;
-        private readonly float _damage;
-
-        public FireballSkill(ProjectilePool pool, float damage)
-            : base(SkillType.Ranged, 2.5f) // 2.5s cooldown
-        {
-            _pool = pool;
-            _damage = damage;
-        }
-
-        protected override void Execute(Vector2 from, Vector2 target)
-        {
-            var dir = (target - from).Normalized();
-            var proj = _pool.Get(from, dir * 400f); // 400 units/s speed
-            proj.SetDamage(_damage);
-        }
+        if (!CanCast()) return;
+        _sinceLastCast = 0f;
+        Execute(from, target);
     }
 
-    // SkillManager – keeps track of all active skills per player
-    public partial class SkillManager : Node
+    protected abstract void Execute(Vector2 from, Vector2 target);
+}
+
+/// <summary>Fires a pooled projectile toward the target.</summary>
+public sealed class FireballSkill : ActiveSkill
+{
+    private readonly ProjectilePool _pool;
+    private readonly Func<float> _damage;
+
+    public FireballSkill(ProjectilePool pool, Func<float> damage) : base("fireball", SkillType.Magic, 2.5f)
     {
-        private readonly Dictionary<string, ActiveSkill> _skills = new();
-        private readonly ProjectilePool _pool;
+        _pool = pool;
+        _damage = damage;
+    }
 
-        public SkillManager(ProjectilePool pool) => _pool = pool;
+    protected override void Execute(Vector2 from, Vector2 target)
+    {
+        var dir = (target - from).Normalized();
+        _pool.Get(from, dir * 400f, _damage(), this);
+    }
+}
 
-        public void Register(string id, ActiveSkill skill) => _skills[id] = skill;
+/// <summary>Hits every enemy in a small arc in front of the caster.</summary>
+public sealed class SlashSkill : ActiveSkill
+{
+    private readonly SpatialGrid _grid;
+    private readonly Func<float> _damage;
+    private readonly float _reach;
 
-        public void Update(float delta)
-        {
-            foreach (var skill in _skills.Values)
-                skill.Tick(delta);
-        }
+    public SlashSkill(SpatialGrid grid, Func<float> damage, float reach = 40f) : base("slash", SkillType.Melee, 0.5f)
+    {
+        _grid = grid;
+        _damage = damage;
+        _reach = reach;
+    }
 
-        public void TryCast(string id, Vector2 from, Vector2 target)
-        {
-            if (_skills.TryGetValue(id, out var skill))
-                skill.Cast(from, target);
-        }
+    protected override void Execute(Vector2 from, Vector2 target)
+    {
+        var center = from + (target - from).LimitLength(_reach);
+        foreach (var node in _grid.Query(center, _reach))
+            (node as IDamageable)?.TakeDamage(_damage());
     }
 }

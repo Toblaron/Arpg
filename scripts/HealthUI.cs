@@ -1,40 +1,43 @@
-// HealthUI.cs – low‑health warning visual cue
+// HealthUI.cs – health bar with a pulsing low-health warning.
 using Godot;
 
 public partial class HealthUI : Control
 {
-    [Export] private ProgressBar _healthBar;
-    [Export] private Color _lowHealthTint = new Color(1, 0.2f, 0.2f); // reddish
-    [Export] private float _lowHealthThreshold = 0.3f; // 30%
-    [Export] private float _pulseSpeed = 2f; // cycles per second
+    [Export] public Health Target { get; set; }
+    [Export] public ProgressBar HealthBar { get; set; }
+    [Export] public Color LowHealthTint { get; set; } = new Color(1, 0.2f, 0.2f);
+    [Export] public float LowHealthThreshold { get; set; } = 0.3f; // 30%
+    [Export] public float PulseSpeed { get; set; } = 2f; // cycles per second
 
-    private bool _isLowHealth = false;
-    private float _pulseTimer = 0f;
+    private bool _isLowHealth;
+    private float _pulseTimer;
+
+    public override void _Ready()
+    {
+        if (Target != null)
+        {
+            Target.HealthChanged += UpdateHealth;
+            UpdateHealth(Target.Current, Target.MaxHealth);
+        }
+    }
 
     public void UpdateHealth(float current, float max)
     {
+        if (HealthBar == null || max <= 0f) return;
         float ratio = current / max;
-        _healthBar.Value = ratio * 100f;
+        HealthBar.Value = ratio * 100f;
 
-        bool nowLow = ratio <= _lowHealthThreshold;
-        if (nowLow != _isLowHealth)
-        {
-            _isLowHealth = nowLow;
-            if (!_isLowHealth)
-                _healthBar.Modulate = Colors.White; // reset
-        }
+        bool nowLow = ratio <= LowHealthThreshold;
+        if (nowLow == _isLowHealth) return;
+        _isLowHealth = nowLow;
+        if (!_isLowHealth) HealthBar.Modulate = Colors.White;
     }
 
     public override void _Process(double delta)
     {
-        if (!_isLowHealth) return;
-
-        _pulseTimer += (float)delta * _pulseSpeed;
-        // sin goes -1..1, map to 0..1 then blend between white and tint
-        float t = (Mathf.Sin(_pulseTimer * Mathf.Tau) + 1f) * 0.5f;
-        _healthBar.Modulate = Colors.White.Lerp(_lowHealthTint, t);
+        if (!_isLowHealth || HealthBar == null) return;
+        _pulseTimer += (float)delta * PulseSpeed;
+        float t = (Mathf.Sin(_pulseTimer * Mathf.Tau) + 1f) * 0.5f; // 0..1
+        HealthBar.Modulate = Colors.White.Lerp(LowHealthTint, t);
     }
-
-    // Stub retained for compatibility
-    public void DisplayLowHealthWarning() { /* now handled in _Process */ }
 }

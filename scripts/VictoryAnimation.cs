@@ -1,4 +1,4 @@
-// VictoryAnimation.cs
+// VictoryAnimation.cs – plays the "victory" animation.
 using Godot;
 
 public partial class VictoryAnimation : Control
@@ -7,6 +7,7 @@ public partial class VictoryAnimation : Control
 
     public void PlayAnimation()
     {
-        AnimationPlayer.PlayAnimation("victory");
+        if (AnimationPlayer != null && AnimationPlayer.HasAnimation("victory"))
+            AnimationPlayer.Play("victory");
     }
 }

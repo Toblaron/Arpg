@@ -1,116 +1,68 @@
-// InventorySerializer.cs
-using System;
+// InventorySerializer.cs – saves the bag and worn gear to JSON, rolls included.
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Godot;
 
-namespace Game.Persistence
+public static class InventorySerializer
 {
-    /// <summary>
-    /// Data structures used for JSON round‑trip.
-    /// </summary>
-    private record SlotData
+    public const string DefaultPath = "user://savegame.json";
+
+    private sealed class SavedSlot
     {
-        public int Index { get; init; }
-        public string ItemPath { get; init; } = string.Empty;
+        public int Index { get; set; }
+        public ItemInstance Item { get; set; }
     }
 
-    private record EquipmentData
+    private sealed class SaveState
     {
-        public string SlotName { get; init; } = string.Empty;
-        public string ItemPath { get; init; } = string.Empty;
+        public int Version { get; set; } = 1;
+        public List<SavedSlot> Inventory { get; set; } = new();
+        public Dictionary<EquipSlot, ItemInstance> Equipped { get; set; } = new();
     }
 
-    private record InventoryState
+    private static readonly JsonSerializerOptions Options = new()
     {
-        public List<SlotData> Slots { get; init; } = new();
-        public List<EquipmentData> Equipped { get; init; } = new();
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }, // "Rare", "FireResistance": readable and stable
+    };
+
+    public static string Save(InventoryGrid grid, EquipmentComponent equipment)
+    {
+        var state = new SaveState();
+        for (int i = 0; i < grid.SlotCount; i++)
+        {
+            var item = grid.GetItem(i);
+            if (item != null) state.Inventory.Add(new SavedSlot { Index = i, Item = item });
+        }
+        foreach (var (slot, item) in equipment.Worn) state.Equipped[slot] = item;
+        return JsonSerializer.Serialize(state, Options);
     }
 
-    /// <summary>
-    /// Handles serialising/deserialising the player's inventory and equipment.
-    /// </summary>
-    public static class InventorySerializer
+    public static void Load(InventoryGrid grid, EquipmentComponent equipment, string json)
     {
-        private static readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            WriteIndented = true,
-            IncludeFields = true
-        };
+        var state = JsonSerializer.Deserialize<SaveState>(json, Options);
+        if (state == null) return;
+        grid.ClearAll();
+        equipment.ClearAll();
+        foreach (var saved in state.Inventory)
+            if (saved.Item?.Base != null) grid.SetItem(saved.Index, saved.Item); // skip bases removed since
+        foreach (var (slot, item) in state.Equipped)
+            if (item?.Base != null && EquipmentComponent.Fits(item, slot)) equipment.Equip(slot, item);
+    }
 
-        /// <summary>
-        /// Create a JSON string representing the current state.
-        /// </summary>
-        public static string Save(Game.Inventory.InventoryGrid grid, Game.Equipment.EquipmentComponent equipment)
-        {
-            var state = new InventoryState();
+    public static void SaveToFile(InventoryGrid grid, EquipmentComponent equipment, string path = DefaultPath)
+    {
+        using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+        file?.StoreString(Save(grid, equipment));
+    }
 
-            // Inventory slots
-            for (int i = 0; i < grid.SlotCount; i++)
-            {
-                var slot = grid.GetSlot(i);
-                var path = slot?.Item?.ResourcePath ?? string.Empty;
-                state.Slots.Add(new SlotData { Index = i, ItemPath = path });
-            }
-
-            // Equipped items
-            foreach (var kvp in equipment.Slots)
-            {
-                var path = kvp.Value?.Item?.ResourcePath ?? string.Empty;
-                state.Equipped.Add(new EquipmentData { SlotName = kvp.Key, ItemPath = path });
-            }
-
-            return JsonSerializer.Serialize(state, _jsonOptions);
-        }
-
-        /// <summary>
-        /// Load a previously saved state into the grid and equipment.
-        /// </summary>
-        public static void Load(
-            Game.Inventory.InventoryGrid grid,
-            Game.Equipment.EquipmentComponent equipment,
-            string json)
-        {
-            var state = JsonSerializer.Deserialize<InventoryState>(json, _jsonOptions);
-            if (state == null) return;
-
-            // Clear current state
-            grid.ClearAll();
-            equipment.ClearAll();
-
-            // Restore inventory slots
-            foreach (var slotData in state.Slots)
-            {
-                var item = LoadItem(slotData.ItemPath);
-                if (item != null)
-                {
-                    grid.SetItem(slotData.Index, item);
-                }
-            }
-
-            // Restore equipped items
-            foreach (var equipData in state.Equipped)
-            {
-                var item = LoadItem(equipData.ItemPath);
-                if (item != null)
-                {
-                    equipment.Equip(equipData.SlotName, item);
-                }
-            }
-
-            // Fire change event so UI can refresh
-            equipment.OnEquipmentChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Helper to load an ItemResource from a resource path.
-        /// </summary>
-        private static ItemResource? LoadItem(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return null;
-            var res = ResourceLoader.Load<ItemResource>(path);
-            return res;
-        }
+    public static bool LoadFromFile(InventoryGrid grid, EquipmentComponent equipment, string path = DefaultPath)
+    {
+        if (!FileAccess.FileExists(path)) return false;
+        using var file = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+        if (file == null) return false;
+        Load(grid, equipment, file.GetAsText());
+        return true;
     }
 }

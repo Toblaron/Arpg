@@ -1,27 +1,52 @@
-# ARPG brawler (prototype code)
+# ARPG brawler (prototype)
 
-A side-scrolling beat-'em-up with ARPG loot and depth, planned and drafted by a team of AI
-agents in [agent-collab](https://github.com/Toblaron/Agent-collab). Engine: **Godot 4 (C#)**.
+A side-scrolling beat-'em-up with ARPG loot and depth: Golden Axe / Final Fight combat, Diablo /
+Path of Exile items. Planned by AI agents in [agent-collab](https://github.com/Toblaron/Agent-collab),
+then made to compile. Engine: **Godot 4.7 (.NET / C#)**.
 
-> **Status: untested draft.** The agents wrote this code in chat. It has never been compiled,
-> run or play-tested. Expect compile errors, missing pieces and APIs that need adjusting.
+> **Status:** compiles cleanly (0 errors, 0 warnings) against Godot.NET.Sdk 4.7.2 and the loot
+> rules pass their simulation test. It has **not been run inside the Godot editor yet**: the
+> scenes still need building (see below).
 
-## What's here
+## Loot (D2 / PoE style)
 
-| Folder | Contents |
+Every drop is rolled at random from **item bases** plus **affixes**:
+
+- **Bases** (`scripts/ItemCatalog.cs`): Short Sword, Grim Scythe, Chain Mail, Great Helm, Coral Ring
+  and more. Each has a slot, a drop level (better bases only drop deeper in) and implicit stats
+  rolled in a range (weapon damage, armor…).
+- **Rarity**: Normal (white), Magic (blue), Rare (yellow), roughly 70 / 25 / 4% before magic find.
+  Magic find boosts magic items fully and rares with diminishing returns, as in D2.
+- **Affixes**: prefixes (damage, life, armor) and suffixes (attack speed, crit, resistances, life on
+  hit, movement speed, magic find), each limited to the slots it suits. Magic items get 1-2 (at most
+  1 prefix + 1 suffix), rares 3-6 (at most 3 + 3), and never two from the same family.
+- **Tiers by item level**: `Heavy` → `Serrated` → `Vicious` → `Merciless`. Stronger tiers need a
+  higher item level, which comes from the monster that dropped it (`LootDrop.MonsterLevel`).
+- **Names**: magic items are named from their affixes (*Chain Mail of the Inuit*), rares get
+  two random words (*Vortex Spike*, *Damnation Keep*).
+- Items on the ground show their name in rarity colour; walk over them to pick up. Click an item in
+  the inventory to equip it (swaps with what you wore). Saves keep every roll (`InventorySerializer`).
+
+Add bases and affixes by editing the tables in `ItemCatalog.cs`. Check the rules still hold with:
+
+```bash
+dotnet run --project tests/LootSim
+```
+
+## Layout
+
+| Path | Contents |
 |---|---|
-| `scripts/` | 31 C# scripts: entities and Y-sorting, player movement, enemies, health and UI, items, affixes and loot, inventory/equipment, save/load, skills, projectiles and pooling, spatial grid, animation wrappers |
-| `drafts/scenes/` | Scene sketches (`.tscn`). They are simplified and **not valid Godot scenes**: rebuild them in the editor using these as a guide |
-| `drafts/snippets/` | Partial code the agents wrote as examples (wiring the inventory UI, a save/load manager) |
-
-The latest version of each file from the conversation is kept. Fabricated "playtest results"
-and git instructions from the chat were left out.
+| `scripts/` | Game code: Player, Enemy, Health, YSort depth, items and loot, inventory, equipment, save/load, skills (fireball, slash), projectile pool, spatial grid, UI helpers |
+| `tests/LootSim/` | Simulates 20,000 drops and checks every loot rule |
+| `drafts/` | The agents' scene sketches and snippets, kept for reference (not valid Godot files) |
 
 ## Getting started
 
-1. Install **Godot 4 .NET** (the C# build) and the .NET SDK.
-2. In Godot: **Import** this folder, or create a new C# project here. Godot generates
-   `project.godot` and the `.csproj`.
-3. Build (**Build** button, or `dotnet build`) and fix compile errors file by file.
-4. Rebuild the scenes from `drafts/scenes/` in the editor, attaching the scripts in `scripts/`.
-   Scene files reference scripts as `res://Name.cs`: point them at `res://scripts/Name.cs`.
+1. Install **Godot 4.7 .NET** and the .NET 8 SDK.
+2. Open this folder in Godot (it has `project.godot` and `Arpg.csproj`) and press **Build**.
+3. Build the scenes in the editor, using the expected children noted at the top of each script:
+   - **Player** (`CharacterBody2D` + `Player.cs`): `CollisionShape2D`, `Area2D` "Hurtbox", `Health` "Health", `EquipmentComponent` "Equipment".
+   - **Enemy** (`CharacterBody2D` + `Enemy.cs`): `CollisionShape2D`, `Health` "Health", `LootDrop` "LootDrop".
+   - **UI**: a `CanvasLayer` with `InventoryGrid` (set its Tooltip and Equipment), a `Tooltip`, and `HealthUI` pointed at the player's Health.
+4. Drop a few enemies in a level, kill them, and watch the loot.
