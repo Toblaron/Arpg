@@ -1,0 +1,8 @@
+{
+    "dotnet.defaultSolution": "Arpg.sln",
+    "files.exclude": {
+        "**/.godot": true,
+        "**/bin": true,
+        "**/obj": true
+    }
+}

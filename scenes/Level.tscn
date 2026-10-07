@@ -1,0 +1,64 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/Enemy.tscn" id="2_enemy"]
+[ext_resource type="Script" uid="uid://c34c1jphojwv2" path="res://scripts/HealthUI.cs" id="3_healthui"]
+[ext_resource type="Script" uid="uid://budtkprnouilm" path="res://scripts/InventoryGrid.cs" id="4_inventory"]
+[ext_resource type="Script" uid="uid://bnlyh23uswkqx" path="res://scripts/Tooltip.cs" id="5_tooltip"]
+
+[node name="Level" type="Node2D"]
+
+[node name="Floor" type="ColorRect" parent="."]
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+color = Color(0.16, 0.16, 0.18, 1)
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(576, 324)
+
+[node name="Enemy" parent="." instance=ExtResource("2_enemy")]
+position = Vector2(150, 150)
+
+[node name="Enemy2" parent="." instance=ExtResource("2_enemy")]
+position = Vector2(1000, 150)
+
+[node name="Enemy3" parent="." instance=ExtResource("2_enemy")]
+position = Vector2(150, 450)
+
+[node name="Enemy4" parent="." instance=ExtResource("2_enemy")]
+position = Vector2(1000, 450)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HealthUI" type="Control" parent="UI" node_paths=PackedStringArray("Target", "HealthBar")]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("3_healthui")
+Target = NodePath("../../Player/Health")
+HealthBar = NodePath("HealthBar")
+
+[node name="HealthBar" type="ProgressBar" parent="UI/HealthUI"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 236.0
+offset_bottom = 40.0
+value = 100.0
+
+[node name="Inventory" type="GridContainer" parent="UI" node_paths=PackedStringArray("Tooltip", "Equipment")]
+offset_left = 16.0
+offset_top = 500.0
+offset_right = 16.0
+offset_bottom = 500.0
+columns = 10
+script = ExtResource("4_inventory")
+SlotCount = 20
+Tooltip = NodePath("../Tooltip")
+Equipment = NodePath("../../Player/Equipment")
+
+[node name="Tooltip" type="PanelContainer" parent="UI"]
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("5_tooltip")

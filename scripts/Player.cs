@@ -12,11 +12,14 @@ public partial class Player : CharacterBody2D, IDamageable
 
     [Export] public float Speed { get; set; } = 200f;
     [Export] public float BaseDamage { get; set; } = 10f;
+    [Export] public float AttackReach { get; set; } = 48f;
+    [Export] public float AttackCooldown { get; set; } = 0.4f;
 
     public Health Health { get; private set; }
     public EquipmentComponent Equipment { get; private set; }
 
     private float _lastY = float.MinValue;
+    private float _attackTimer;
 
     public override void _Ready()
     {
@@ -40,6 +43,23 @@ public partial class Player : CharacterBody2D, IDamageable
         Velocity = input * CurrentSpeed; // GetVector is already length-limited to 1
         MoveAndSlide();
         YSort.Update(this, ref _lastY);
+
+        _attackTimer = Mathf.Max(0f, _attackTimer - (float)delta);
+        if (Input.IsActionJustPressed("attack") && _attackTimer <= 0f) Attack();
+    }
+
+    /// <summary>Hits every enemy within AttackReach of the player.</summary>
+    private void Attack()
+    {
+        _attackTimer = AttackCooldown;
+        foreach (var node in GetTree().GetNodesInGroup("Enemy"))
+        {
+            if (node is Enemy enemy && enemy.GlobalPosition.DistanceTo(GlobalPosition) <= AttackReach)
+            {
+                enemy.TakeDamage(AttackDamage);
+                OnHitLanded();
+            }
+        }
     }
 
     /// <summary>Hit damage: (base + added) × (1 + increased%), with a crit roll from gear.</summary>

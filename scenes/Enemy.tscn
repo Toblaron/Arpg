@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" uid="uid://b3nuohdrpbodi" path="res://scripts/Enemy.cs" id="1_enemy"]
+[ext_resource type="Script" uid="uid://crhsbxj5a4xti" path="res://scripts/Health.cs" id="2_health"]
+[ext_resource type="Script" uid="uid://c6yeu7kwce3be" path="res://scripts/LootDrop.cs" id="3_loot"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 12.0
+height = 40.0
+
+[node name="Enemy" type="CharacterBody2D"]
+script = ExtResource("1_enemy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Body" type="ColorRect" parent="."]
+offset_left = -12.0
+offset_top = -20.0
+offset_right = 12.0
+offset_bottom = 20.0
+mouse_filter = 2
+color = Color(0.85, 0.2, 0.2, 1)
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("2_health")
+MaxHealth = 30.0
+
+[node name="LootDrop" type="Node" parent="."]
+script = ExtResource("3_loot")

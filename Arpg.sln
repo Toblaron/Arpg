@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arpg", "Arpg.csproj", "{099267B8-0EC6-4C81-A2BE-C4453131FA61}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{69358621-45A3-4964-B3BE-5131B882541B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LootSim", "tests\LootSim\LootSim.csproj", "{7196AD1E-797D-4E3C-9C18-D458817F63C1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{099267B8-0EC6-4C81-A2BE-C4453131FA61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{099267B8-0EC6-4C81-A2BE-C4453131FA61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{099267B8-0EC6-4C81-A2BE-C4453131FA61}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{099267B8-0EC6-4C81-A2BE-C4453131FA61}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{7196AD1E-797D-4E3C-9C18-D458817F63C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7196AD1E-797D-4E3C-9C18-D458817F63C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7196AD1E-797D-4E3C-9C18-D458817F63C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7196AD1E-797D-4E3C-9C18-D458817F63C1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7196AD1E-797D-4E3C-9C18-D458817F63C1} = {69358621-45A3-4964-B3BE-5131B882541B}
+	EndGlobalSection
+EndGlobal

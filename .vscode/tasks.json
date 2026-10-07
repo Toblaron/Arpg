@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": ["build", "${workspaceFolder}/Arpg.csproj", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary"],
+            "problemMatcher": "$msCompile",
+            "group": { "kind": "build", "isDefault": true }
+        },
+        {
+            "label": "smoke test",
+            "dependsOn": "build",
+            "command": "${env:GODOT4}",
+            "type": "process",
+            "args": ["--headless", "--path", "${workspaceFolder}", "-s", "res://tests/smoke_test.gd"],
+            "problemMatcher": []
+        },
+        {
+            "label": "loot sim",
+            "command": "dotnet",
+            "type": "process",
+            "args": ["run", "--project", "${workspaceFolder}/tests/LootSim"],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

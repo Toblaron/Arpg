@@ -1,0 +1,37 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" uid="uid://d2sojkcsbckdy" path="res://scripts/Player.cs" id="1_player"]
+[ext_resource type="Script" uid="uid://crhsbxj5a4xti" path="res://scripts/Health.cs" id="2_health"]
+[ext_resource type="Script" uid="uid://xyh76lt0eb37" path="res://scripts/EquipmentComponent.cs" id="3_equip"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_body"]
+radius = 12.0
+height = 40.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hurt"]
+size = Vector2(24, 40)
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_body")
+
+[node name="Body" type="ColorRect" parent="."]
+offset_left = -12.0
+offset_top = -20.0
+offset_right = 12.0
+offset_bottom = 20.0
+mouse_filter = 2
+color = Color(0.25, 0.5, 1, 1)
+
+[node name="Hurtbox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("RectangleShape2D_hurt")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("2_health")
+
+[node name="Equipment" type="Node" parent="."]
+script = ExtResource("3_equip")
