@@ -1,0 +1,12 @@
+// TestScene.tscn (pseudo‑code for quick setup)
+[Node]
+Node2D
+{
+    // Spawn a grid of 200 Entity instances to stress test sorting.
+    for (int i = 0; i < 200; i++)
+    {
+        var e = (Entity)GD.Load<PackedScene>("res://Entity.tscn").Instantiate();
+        e.Position = new Vector2(RNG.RandfRange(0, 1024), RNG.RandfRange(0, 768));
+        AddChild(e);
+    }
+}
