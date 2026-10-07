@@ -47,7 +47,11 @@ public partial class WaveSpawner : Node2D
     private bool _running;
     private readonly RandomNumberGenerator _rng = new();
 
-    public override void _Ready() => _rng.Randomize();
+    public override void _Ready()
+    {
+        AddToGroup("WaveSpawner");
+        _rng.Randomize();
+    }
 
     public override void _Process(double delta)
     {
@@ -134,6 +138,32 @@ public partial class WaveSpawner : Node2D
         }
         _running = false;
         EmitSignal(SignalName.EncounterCleared);
+    }
+
+    /// <summary>Spawn one enemy just off a screen edge (the boss's backup).</summary>
+    public Enemy SpawnAtEdge(string typeId) => Spawn(typeId, SideEntryPoint());
+
+    /// <summary>The stage boss, walking in from the right; tougher each stage.</summary>
+    public Enemy SpawnBoss(int stage)
+    {
+        var boss = (EnemyScene ?? GD.Load<PackedScene>("res://scenes/Enemy.tscn")).Instantiate<Enemy>();
+        boss.TypeId = EnemyType.BossId;
+        boss.HealthScale = 1f + 0.5f * (stage - 1);
+        if (boss.GetNodeOrNull<LootDrop>("LootDrop") is { } loot) loot.MonsterLevel = 2 + stage * 2;
+        boss.Position = PlayBounds.ClampDepth(new Vector2(View.End.X + 50f, (PlayBounds.Top + PlayBounds.Bottom) / 2f));
+        (GetTree().CurrentScene ?? GetParent()).AddChild(boss);
+        return boss;
+    }
+
+    /// <summary>Remove every enemy and stop any encounter (stage over or restarting).</summary>
+    public void ClearAll()
+    {
+        _queue.Clear();
+        _alive = 0;
+        _running = false;
+        _breakTimer = 0f;
+        foreach (var n in GetTree().GetNodesInGroup("Enemy")) n.QueueFree();
+        foreach (var n in GetTree().GetNodesInGroup("EnemyProjectile")) n.QueueFree();
     }
 
     /// <summary>Just off the left or right edge of the screen, somewhere on the street.</summary>

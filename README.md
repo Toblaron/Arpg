@@ -48,7 +48,33 @@ Løvstakken: walk right along the sidewalk and road (up/down moves in depth), th
 
 - **Fight zones:** at four points the screen locks and enemies come in from both sides: 1, 2, 2 and 3 waves (8 in all).
   Beat them and a blinking **GO →** sends you on.
-- **Stage clear:** reach the Løvstakkveien sign at the end of the street.
+- **Boss:** at the end of the street, by the Løvstakkveien sign, **Pantelåneren** is waiting: the pawnbroker who owns
+  the block. A heavy-set brute in a maroon velour tracksuit, a dozen gold chains and a jeweller's loupe, swinging a
+  sledgehammer. He glows red before a ground-slam shockwave (stay out of reach), shrugs off most stun, and calls in a
+  Thug and a Street Hustler at 60% and 30% health. Beat him to clear the stage. He gets 50% tougher each stage.
+- **Next stage:** after Matkroken you start the street again as the next stage. Waves keep counting up (harder enemies,
+  more of them) and you keep your gear, kroner and upgrades.
+
+## Kroner
+
+Every enemy drops Norwegian kroner: coins for small change, banknotes for 50 kr and up. Walk close and they slide into
+your pocket; whatever's left on the street is swept up when the stage is cleared. Dope Fiends carry 1–5 kr, Drug
+Dealers 25–45, Ballers 80–150, and the boss 400–600.
+
+## Matkroken
+
+The corner shop opens between stages (the game pauses). Upgrades are permanent and each level costs more (×1.6).
+
+| Item | Effect | Price | Max |
+|---|---|---|---|
+| Pølse i lompe | Heal to full | 60 kr | – |
+| Brunost | +20 max health | 150 kr | 10 |
+| Fiskeboller | +15% damage | 200 kr | 10 |
+| Energidrikk | +8% movement speed | 150 kr | 5 |
+| Svart kaffe | Class ability cooldown −15% | 180 kr | 4 |
+| Skrapelodd | +25% magic find | 120 kr | 10 |
+
+Prices and effects are in `scripts/Shop/ShopCatalog.cs`.
 - The street, buildings, neon signs and the mountain (scrolling slower, for depth) are drawn in code in
   `scripts/Stage/StreetBackdrop.cs`. Fight zone positions and wave counts are settings on the `StageDirector` node.
 

@@ -14,7 +14,7 @@ public partial class LootDrop : Node
     {
         var world = GetTree().CurrentScene;
         if (world == null) return;
-        float magicFind = (GetTree().GetFirstNodeInGroup("Player") as Player)?.Equipment?.GetStat(StatKey.MagicFind) ?? 0f;
+        float magicFind = (GetTree().GetFirstNodeInGroup("Player") as Player)?.MagicFind ?? 0f;
 
         for (int i = 0; i < MaxDrops; i++)
         {

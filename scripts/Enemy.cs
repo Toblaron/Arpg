@@ -17,6 +17,9 @@ public partial class Enemy : CharacterBody2D, IDamageable
     public Health Health { get; private set; }
 
     private const float RangedKeepMin = 110f, RangedKeepMax = 170f;
+    private const float SlamEvery = 4.5f, SlamWindup = 0.8f, SlamRadius = 80f, SlamDamageMult = 1.6f;
+    private static readonly float[] SummonAt = { 0.6f, 0.3f }; // boss calls backup at these health fractions
+    private static readonly string[] Backup = { "thug", "street_hustler" };
     private const float ChargeTrigger = 150f, ChargeWindup = 0.55f, ChargeSpeed = 330f, ChargeTime = 0.4f;
 
     private Player _target;
@@ -32,8 +35,15 @@ public partial class Enemy : CharacterBody2D, IDamageable
     private Vector2 _chargeDir;
     private bool _dashHit;
 
+    // Boss state.
+    private float _slamTimer = 2.5f, _slamWindup;
+    private int _summons;
+
     public bool IsStunned => _stun > 0f;
     public bool IsCharging => _dash > 0f;
+    public bool IsBoss => Type?.Behaviour == EnemyBehaviour.Boss;
+    public bool IsSlamming => _slamWindup > 0f;
+    public int BackupCalls => _summons;
 
     public override void _Ready()
     {
@@ -52,14 +62,22 @@ public partial class Enemy : CharacterBody2D, IDamageable
             loot.DropChance = Type.DropChance;
         }
 
-        _look = new EnemyLook { Name = "Look", Type = Type, Seed = (int)(GetInstanceId() % 9973) };
+        _look = new EnemyLook { Name = "Look", Type = Type, Seed = (int)(GetInstanceId() % 9973), BaseScale = Type.Size };
         GetNodeOrNull("Body")?.QueueFree(); // the placeholder box
         AddChild(_look);
+        _look.SetFacing(-1f);
+        if (Type.Size != 1f && GetNodeOrNull<CollisionShape2D>("CollisionShape2D") is { Shape: CapsuleShape2D capsule } col)
+            col.Shape = new CapsuleShape2D { Radius = capsule.Radius * Type.Size, Height = capsule.Height * Type.Size };
+        if (IsBoss)
+        {
+            AddToGroup("Boss");
+            Health.HealthChanged += OnBossHurt;
+        }
 
         var nameTag = new Label
         {
             Text = Type.DisplayName,
-            Position = new Vector2(-50, -38),
+            Position = new Vector2(-50, -38 * Type.Size),
             Size = new Vector2(100, 10),
             HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -95,6 +113,7 @@ public partial class Enemy : CharacterBody2D, IDamageable
             case EnemyBehaviour.Ranged: Ranged(toTarget); break;
             case EnemyBehaviour.Charger: Charger(toTarget, dt); break;
             case EnemyBehaviour.Erratic: ChaseAndHit(toTarget, Wobble(toTarget)); break;
+            case EnemyBehaviour.Boss: Boss(toTarget, dt); break;
             default: ChaseAndHit(toTarget, toTarget.Normalized()); break;
         }
         MoveAndSlide();
@@ -178,6 +197,46 @@ public partial class Enemy : CharacterBody2D, IDamageable
         ChaseAndHit(toTarget, toTarget.Normalized());
     }
 
+    /// <summary>Pantelåneren: heavy swings up close; every few seconds a telegraphed sledgehammer slam.</summary>
+    private void Boss(Vector2 toTarget, float dt)
+    {
+        if (_slamWindup > 0f)
+        {
+            _slamWindup -= dt;
+            Velocity = Vector2.Zero;
+            if (_slamWindup <= 0f) Slam();
+            return;
+        }
+        _slamTimer -= dt;
+        if (_slamTimer <= 0f && toTarget.Length() < SlamRadius * 1.6f)
+        {
+            _slamTimer = SlamEvery;
+            _slamWindup = SlamWindup;
+            Velocity = Vector2.Zero;
+            Modulate = new Color(1.9f, 0.6f, 0.6f); // tell: red glow, hammer raised
+            _look.ArmAngle = 1.2f;
+            return;
+        }
+        ChaseAndHit(toTarget, toTarget.Normalized());
+    }
+
+    private void Slam()
+    {
+        Modulate = Colors.White;
+        _look.PlayAttack();
+        Shockwave.Spawn(this, GlobalPosition + new Vector2(0, 18), SlamRadius);
+        if (_target.GlobalPosition.DistanceTo(GlobalPosition) <= SlamRadius)
+            _target.TakeDamage(Type.Damage * SlamDamageMult);
+    }
+
+    private void OnBossHurt(float current, float max)
+    {
+        if (_summons >= SummonAt.Length || current <= 0f || current / max > SummonAt[_summons]) return;
+        _summons++;
+        if (GetTree().GetFirstNodeInGroup("WaveSpawner") is WaveSpawner spawner)
+            foreach (string id in Backup) spawner.SpawnAtEdge(id);
+    }
+
     private void Hit()
     {
         _target.TakeDamage(Type.Damage);
@@ -203,6 +262,11 @@ public partial class Enemy : CharacterBody2D, IDamageable
     {
         EmitSignal(SignalName.Killed, this);
         GetNodeOrNull<LootDrop>("LootDrop")?.Drop(GlobalPosition);
+        int kroner = (int)GD.RandRange(Type.KronerMin, Type.KronerMax);
+        if (IsBoss)
+            for (int i = 0; i < 6; i++) KronerPickup.Drop(this, GlobalPosition, kroner / 6); // a shower of notes
+        else
+            KronerPickup.Drop(this, GlobalPosition, kroner);
         QueueFree();
     }
 }

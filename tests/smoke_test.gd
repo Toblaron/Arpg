@@ -55,6 +55,10 @@ func _hp(node: Node) -> float:
 
 func _init() -> void:
 	_run.call_deferred()
+	# Watchdog: a script error stops _run without quitting; don't hang forever.
+	create_timer(240.0).timeout.connect(func():
+		print("SMOKE TEST FAILED (timed out: a script error or a stuck wait)")
+		quit(1))
 
 
 func _run() -> void:
@@ -188,6 +192,12 @@ func _run() -> void:
 		await _wait_physics(2)
 		_check(slot.text == "", "clicking the slot equipped the item (slot is now empty)")
 
+	# Kroner: every kill dropped money, and walking near it picked it up.
+	await create_timer(0.6).timeout
+	var kroner: int = player.get("Kroner")
+	_check(kroner > 0, "enemies dropped kroner and the player picked them up (%d kr)" % kroner)
+	_check((level.get_node("UI/KronerUI") as Label).text.ends_with(" kr"), "kroner counter shows '%s'" % (level.get_node("UI/KronerUI") as Label).text)
+
 	# Stage: Final Fight-style camera, street bounds and fight zones.
 	var director: Node = level.get_node("StageDirector")
 	var cam: Camera2D = level.get_node("Camera2D")
@@ -217,7 +227,7 @@ func _run() -> void:
 	var locked_x := cam.global_position.x
 	await create_timer(2.5).timeout  # they enter one by one
 	_check(_alive("Enemy").size() == 3, "wave 1 enemies entered (%d)" % _alive("Enemy").size())
-	_check(wave_label.text.begins_with("WAVE 1"), "wave counter shows '%s'" % wave_label.text)
+	_check(wave_label.text.contains("WAVE 1"), "wave counter shows '%s'" % wave_label.text)
 	var view_left := locked_x - 288.0
 	_check(_alive("Enemy").all(func(e): return e.global_position.y >= floor_top - 0.5), "enemies stay on the street")
 	Input.action_press("ui_right")
@@ -258,7 +268,7 @@ func _run() -> void:
 	director.call("WarpTo", float(director.get("StageLength")) - 100.0)
 	for f in 3:
 		await physics_frame
-	_check(director.get("Cleared"), "reaching the end of the street clears the stage")
+	_check(not director.get("Cleared"), "the stage isn't cleared before the boss is beaten")
 
 	# Inventory is hidden during play and toggles with I.
 	_check(not inventory.visible, "inventory starts hidden")
@@ -266,6 +276,65 @@ func _run() -> void:
 	_check(inventory.visible, "I opens the inventory")
 	await _tap_event("inventory")
 	_check(not inventory.visible, "I closes the inventory")
+
+	# Boss: Pantelåneren waits at the end of the street.
+	_check(director.get("BossFight") and director.get("Locked"), "boss fight started, screen locked")
+	var boss: Node2D = director.get("Boss")
+	await create_timer(1.0).timeout
+	_check(level.get_node("UI/BossUI").visible, "boss health bar is shown")
+	var boss_max: float = boss.get_node("Health").get("MaxHealth")
+	_check(boss_max >= 400.0, "boss is tough (%.0f HP)" % boss_max)
+	# Stand next to him: he winds up a slam.
+	var slammed := false
+	for i in 400:
+		player.global_position = boss.global_position + Vector2(-40, 0)
+		await physics_frame
+		if boss.get("IsSlamming"):
+			slammed = true
+			break
+	_check(slammed, "boss winds up his sledgehammer slam")
+	var enemies_before := _alive("Enemy").size()
+	boss.call("TakeDamage", boss_max * 0.45)
+	await _wait_physics(3)
+	_check(boss.get("BackupCalls") == 1 and _alive("Enemy").size() > enemies_before, "hurt boss calls for backup (%d enemies)" % _alive("Enemy").size())
+	var kroner_before_boss: int = player.get("Kroner")
+	boss.call("TakeDamage", 999999.0)
+	await _wait_physics(3)
+	_check(director.get("Cleared"), "beating the boss clears the stage")
+	_check(_alive("Enemy").is_empty(), "the boss's backup leaves with him")
+	await create_timer(2.0).timeout
+	_check(int(player.get("Kroner")) >= kroner_before_boss + 300, "boss paid out (%d -> %d kr)" % [kroner_before_boss, player.get("Kroner")])
+
+	# Matkroken opens after the stage-clear banner and pauses the game.
+	var shop: Control = level.get_node("UI/Shop")
+	await create_timer(1.5).timeout
+	_check(shop.visible and paused, "Matkroken shop opened and the game is paused")
+	player.call("AddKroner", 2000)
+	var wallet: int = player.get("Kroner")
+	var max_hp: float = player.get_node("Health").get("MaxHealth")
+	_check(shop.call("Buy", "brunost"), "bought Brunost")
+	_check(int(player.get("Kroner")) == wallet - 150, "Brunost cost 150 kr (%d -> %d)" % [wallet, player.get("Kroner")])
+	_check(is_equal_approx(float(player.get_node("Health").get("MaxHealth")), max_hp + 20.0), "Brunost gave +20 max health")
+	shop.call("Buy", "fiskeboller")
+	_check(player.call("UpgradeLevel", "fiskeboller") == 1, "bought Fiskeboller (damage upgrade)")
+	_check(shop.call("Buy", "brunost") and int(player.get("Kroner")) == wallet - 150 - 200 - 240, "second Brunost costs more (240 kr)")
+	player.get_node("Health").call("ApplyDamage", 50.0)
+	shop.call("Buy", "polse")
+	_check(is_equal_approx(float(player.get_node("Health").get("Current")), float(player.get_node("Health").get("MaxHealth"))), "Pølse i lompe healed to full")
+	player.call("TrySpend", int(player.get("Kroner")))
+	_check(not shop.call("Buy", "skrapelodd"), "can't buy without kroner")
+
+	# On to stage 2: back to the start of the street, gear and upgrades kept.
+	shop.call("Continue")
+	await _wait_physics(3)
+	_check(not shop.visible and not paused, "shop closed and the game resumed")
+	_check(director.get("Stage") == 2 and not director.get("Cleared"), "stage 2 started")
+	_check(player.global_position.x < 200.0, "player is back at the start of the street (x %.0f)" % player.global_position.x)
+	_check(player.call("UpgradeLevel", "brunost") == 2, "upgrades carried over to stage 2")
+	director.call("WarpTo", zones[0] + 5.0)
+	for f in 3:
+		await physics_frame
+	_check(director.get("Locked") and spawner.get("CurrentWave") == 9, "stage 2 fights carry on the wave count (wave %d)" % spawner.get("CurrentWave"))
 
 	print("SMOKE TEST %s (%d failed)" % ["PASSED" if _failures == 0 else "FAILED", _failures])
 	quit(0 if _failures == 0 else 1)

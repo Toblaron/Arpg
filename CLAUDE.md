@@ -11,7 +11,7 @@ Godot 4.7.2 .NET (C#) belt-scrolling beat-'em-up (Final Fight / Turtles in Time 
 ## Build and verify — do this after every change
 
 1. `dotnet build Arpg.csproj` — must be 0 errors.
-2. `"$GODOT4" --headless --path . -s res://tests/smoke_test.gd` — plays the level headless: attack kills enemies, loot drops, pickup, equip. Exit code 0 = all PASS. Add a check here when you add a gameplay feature.
+2. `"$GODOT4" --headless --path . -s res://tests/smoke_test.gd` — plays the whole game headless (~2 min): combat, every enemy type, loot, kroner, the stage and fight zones, the boss, Matkroken and stage 2. Exit code 0 = all PASS. Add a check here when you add a gameplay feature. A GDScript error inside the test is caught by a 240 s watchdog.
 3. `dotnet run --project tests/LootSim` — after touching ItemCatalog/ItemGenerator/ItemInstance/Stats.
 4. After adding or renaming scenes/scripts outside the editor: `"$GODOT4" --headless --path . --import` so Godot generates `.uid` files.
 
@@ -52,6 +52,14 @@ Tools: run_project, get_debug_output, stop_project, launch_editor, create_scene,
 - `PlayBounds` (static, same file): walkable strip `FloorTop..FloorBottom` (sidewalk + road) and the screen's left/right edges. Player is clamped to both, enemies to depth only. Anything that moves characters must respect it.
 - World units: the camera zooms 2x, so the screen shows 576x324 world px. Design screen 1152x648 (project setting, stretch `canvas_items`). Use `PlayBounds.ScreenSize`, not `GetViewportRect()` (the headless/window size can differ).
 - `StreetBackdrop.cs`: sky (fixed), Løvstakken mountain (parallax 0.15), street layer — drawn at 0.5 scale in 1152x648 design units.
+
+## Boss, kroner, Matkroken
+
+- Boss = `EnemyType` `pantelaaner` (`EnemyBehaviour.Boss`, `Size` 1.7) handled in `Enemy.cs` (`Boss()`, `Slam()`, backup via `WaveSpawner.SpawnAtEdge` at `SummonAt` health fractions). Spawned by `StageDirector.StartBoss()` at `BossAt` after the last encounter; group "Boss"; `BossUI` shows its bar. Killing it → `ClearStage()`.
+- `StageDirector.StartStage(n)` restarts the street as stage n (clears enemies/items/kroner, player to `PlayerStart`); wave count carries on.
+- Kroner: `EnemyType.KronerMin/Max` → `KronerPickup.Drop` on death (group "Kroner", magnet pickup) → `Player.AddKroner` / `TrySpend`, signal `KronerChanged`. `KronerUI` shows it.
+- Matkroken: `scripts/Shop/ShopCatalog.cs` (items + `PlayerUpgrades`), `ShopUI.cs` (opens `OpenDelay` s after `StageCleared`, pauses the tree, `Buy(id)`, `Continue()`). Upgrade effects are applied in `Player` (max health, damage, speed, ability cooldown, magic find). From GDScript use `player.call("UpgradeLevel", id)`.
+- One Godot script class per file when the script is attached in a scene (file name = class name); helper classes created with `new` can share a file.
 
 ## Input actions (project.godot)
 

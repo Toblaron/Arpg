@@ -23,7 +23,12 @@ public partial class WaveUI : Control
         _go.Text = "GO →";
         _go.Visible = false;
         if (Spawner != null) Spawner.WaveStarted += (wave, _) => ShowBanner($"WAVE {wave}");
-        if (Director != null) Director.StageCleared += () => ShowBanner("STAGE CLEAR", 4f);
+        if (Director != null)
+        {
+            Director.StageCleared += () => ShowBanner("STAGE CLEAR", 2f);
+            Director.StageStarted += stage => ShowBanner($"STAGE {stage}");
+            Director.BossAppeared += boss => ShowBanner(boss.Type.DisplayName.ToUpperInvariant());
+        }
     }
 
     private Label MakeLabel(int size, Vector2 pos, Vector2 box)
@@ -48,7 +53,10 @@ public partial class WaveUI : Control
 
     public override void _Process(double delta)
     {
-        _counter.Text = Spawner is { InEncounter: true } s ? $"WAVE {s.CurrentWave}  ·  {s.Remaining} left" : "";
+        string stage = $"STAGE {Director?.Stage ?? 1}";
+        _counter.Text = Director?.BossFight == true ? $"{stage}  ·  BOSS"
+            : Spawner is { InEncounter: true } s ? $"{stage}  ·  WAVE {s.CurrentWave}  ·  {s.Remaining} left"
+            : stage;
         bool go = Director?.ShowGo ?? false;
         _blink = go ? _blink + (float)delta : 0f;
         _go.Visible = go && Mathf.PosMod(_blink, 0.8f) < 0.5f;

@@ -1,7 +1,8 @@
 // StageDirector.cs – runs a belt-scroller stage (Final Fight / Turtles in Time style):
 // the camera follows the player to the right and never scrolls back; at each encounter point
-// the screen locks until its waves are beaten, then "GO →" sends the player on. Reaching the
-// end of the street clears the stage.
+// the screen locks until its waves are beaten, then "GO →" sends the player on. At the end of
+// the street the boss is waiting; beating him clears the stage (and Matkroken opens). The next
+// stage replays the street, harder: waves keep counting up and the boss gets tougher.
 using Godot;
 
 /// <summary>Where characters may stand. Set by the StageDirector; wide open when there is none.</summary>
@@ -23,6 +24,8 @@ public static class PlayBounds
 public partial class StageDirector : Node2D
 {
     [Signal] public delegate void StageClearedEventHandler();
+    [Signal] public delegate void StageStartedEventHandler(int stage);
+    [Signal] public delegate void BossAppearedEventHandler(Enemy boss);
 
     [Export] public Player Player { get; set; }
     [Export] public Camera2D Camera { get; set; }
@@ -36,12 +39,21 @@ public partial class StageDirector : Node2D
     [Export] public float[] EncounterAt { get; set; } = { 1100f, 2200f, 3300f, 4450f };
     /// <summary>How many waves each encounter sends.</summary>
     [Export] public int[] EncounterWaves { get; set; } = { 1, 2, 2, 3 };
+    /// <summary>X where the screen locks for the boss fight (after the last encounter).</summary>
+    [Export] public float BossAt { get; set; } = 4650f;
+    /// <summary>Where the player starts each stage.</summary>
+    [Export] public Vector2 PlayerStart { get; set; } = new(90, 262);
 
     public bool Locked { get; private set; }
     public int NextEncounter { get; private set; }
     public bool Cleared { get; private set; }
+    public int Stage { get; private set; } = 1;
+    public Enemy Boss { get; private set; }
+    public bool BossFight => Boss != null && IsInstanceValid(Boss);
     /// <summary>Show the blinking "GO →": free to move on and there's more street ahead.</summary>
     public bool ShowGo => !Locked && !Cleared && NextEncounter > 0;
+
+    private bool _bossStarted;
 
     private const float Margin = 24f; // keep the player this far inside the screen edges
     private Vector2 _half;
@@ -70,8 +82,8 @@ public partial class StageDirector : Node2D
             _camX = Mathf.Clamp(Mathf.Max(_camX, Player.GlobalPosition.X), _half.X, StageLength - _half.X);
             if (NextEncounter < EncounterAt.Length && Player.GlobalPosition.X >= EncounterAt[NextEncounter])
                 StartEncounter();
-            else if (!Cleared && NextEncounter >= EncounterAt.Length && Player.GlobalPosition.X >= StageLength - 160f)
-                ClearStage();
+            else if (!_bossStarted && NextEncounter >= EncounterAt.Length && Player.GlobalPosition.X >= BossAt)
+                StartBoss();
         }
         UpdateCamera();
     }
@@ -92,12 +104,49 @@ public partial class StageDirector : Node2D
         Spawner?.StartEncounter(waves);
     }
 
-    private void OnEncounterCleared() => Locked = false;
+    private void OnEncounterCleared()
+    {
+        if (!_bossStarted) Locked = false; // the boss's backup doesn't end the boss fight
+    }
+
+    private void StartBoss()
+    {
+        Locked = true;
+        _bossStarted = true;
+        Boss = Spawner?.SpawnBoss(Stage);
+        if (Boss == null) { ClearStage(); return; }
+        Boss.Killed += _ => ClearStage();
+        EmitSignal(SignalName.BossAppeared, Boss);
+    }
 
     private void ClearStage()
     {
+        if (Cleared) return;
         Cleared = true;
+        Locked = false;
+        Boss = null;
+        // Send the backup packing and sweep the leftover kroner into the player's pocket.
+        foreach (var n in GetTree().GetNodesInGroup("Enemy"))
+            if (n is Enemy { IsBoss: false } e) e.QueueFree();
+        foreach (var n in GetTree().GetNodesInGroup("Kroner"))
+            (n as KronerPickup)?.CollectNow();
         EmitSignal(SignalName.StageCleared);
+    }
+
+    /// <summary>Start stage <paramref name="stage"/> from the beginning of the street. Gear, kroner and upgrades carry over.</summary>
+    public void StartStage(int stage)
+    {
+        Stage = stage;
+        Cleared = Locked = _bossStarted = false;
+        NextEncounter = 0;
+        Boss = null;
+        Spawner?.ClearAll();
+        foreach (var n in GetTree().CurrentScene.GetChildren())
+            if (n is Item || n is KronerPickup || n is FloatText) n.QueueFree();
+        _camX = _half.X;
+        UpdateCamera();
+        Player.GlobalPosition = PlayerStart;
+        EmitSignal(SignalName.StageStarted, Stage);
     }
 
     private void UpdateCamera()

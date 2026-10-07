@@ -17,8 +17,15 @@ public partial class Player : CharacterBody2D, IDamageable
     /// <summary>Which playable class this is (see PlayerClass.Create), e.g. "pimp".</summary>
     [Export] public string ClassId { get; set; } = PimpClass.ClassId;
 
+    /// <summary>Raised with the new balance when kroner are picked up or spent.</summary>
+    [Signal] public delegate void KronerChangedEventHandler(int kroner);
+
     public Health Health { get; private set; }
     public EquipmentComponent Equipment { get; private set; }
+    /// <summary>Norwegian kroner: dropped by enemies, spent at Matkroken.</summary>
+    public int Kroner { get; private set; }
+    /// <summary>Permanent upgrades bought at Matkroken.</summary>
+    public PlayerUpgrades Upgrades { get; } = new();
     public PlayerClass Class { get; private set; }
     /// <summary>Left or right; the class ability and effects aim this way.</summary>
     public Vector2 Facing { get; private set; } = Vector2.Right;
@@ -72,7 +79,7 @@ public partial class Player : CharacterBody2D, IDamageable
     /// <summary>The class's unique ability (the Pimp's Bitch-Slap).</summary>
     private void UseAbility()
     {
-        _abilityTimer = Class.AbilityCooldown;
+        _abilityTimer = Class.AbilityCooldown * Upgrades.AbilityCooldownMultiplier;
         _look?.PlayAbility();
         Class.UseAbility(this);
     }
@@ -100,13 +107,38 @@ public partial class Player : CharacterBody2D, IDamageable
             float added = Equipment?.GetStat(StatKey.AddedDamage) ?? 0f;
             float increased = Equipment?.GetStat(StatKey.IncreasedDamage) ?? 0f;
             float crit = 5f + (Equipment?.GetStat(StatKey.CritChance) ?? 0f);
-            float damage = (BaseDamage + added) * (1f + increased / 100f);
+            float damage = (BaseDamage + added) * (1f + increased / 100f) * Upgrades.DamageMultiplier;
             return GD.Randf() * 100f < crit ? damage * 1.5f : damage;
         }
     }
 
     /// <summary>Movement speed after gear (boots, heavy armour penalties).</summary>
-    public float CurrentSpeed => Speed * (1f + (Equipment?.GetStat(StatKey.MoveSpeed) ?? 0f) / 100f);
+    public float CurrentSpeed => Speed * (1f + (Equipment?.GetStat(StatKey.MoveSpeed) ?? 0f) / 100f) * Upgrades.SpeedMultiplier;
+
+    /// <summary>Magic find from gear plus Matkroken scratch cards.</summary>
+    public float MagicFind => (Equipment?.GetStat(StatKey.MagicFind) ?? 0f) + Upgrades.MagicFindBonus;
+
+    public void AddKroner(int amount)
+    {
+        if (amount <= 0) return;
+        Kroner += amount;
+        EmitSignal(SignalName.KronerChanged, Kroner);
+    }
+
+    /// <summary>Pay <paramref name="amount"/> kroner if there's enough. False (and nothing spent) otherwise.</summary>
+    public bool TrySpend(int amount)
+    {
+        if (amount < 0 || amount > Kroner) return false;
+        Kroner -= amount;
+        EmitSignal(SignalName.KronerChanged, Kroner);
+        return true;
+    }
+
+    /// <summary>How many times a Matkroken upgrade was bought (also callable from GDScript).</summary>
+    public int UpgradeLevel(string id) => Upgrades.Level(id);
+
+    /// <summary>Re-apply everything that sets max health (gear and upgrades).</summary>
+    public void RefreshStats() => ApplyGearStats();
 
     /// <summary>Call when one of your hits lands: heals from life-on-hit gear.</summary>
     public void OnHitLanded() => Health?.Heal(Equipment?.GetStat(StatKey.LifeOnHit) ?? 0f);
@@ -120,8 +152,8 @@ public partial class Player : CharacterBody2D, IDamageable
 
     private void ApplyGearStats()
     {
-        if (Health != null && Equipment != null)
-            Health.SetMaxHealth(100f + Equipment.GetStat(StatKey.Health));
+        if (Health != null)
+            Health.SetMaxHealth(100f + (Equipment?.GetStat(StatKey.Health) ?? 0f) + Upgrades.MaxHealthBonus);
     }
 
     private void OnDied()

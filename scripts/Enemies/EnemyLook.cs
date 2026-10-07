@@ -67,6 +67,7 @@ public partial class EnemyLook : ClassLook
             case "baller": DrawBaller(); break;
             case "g": DrawG(); break;
             case "dope_fiend": DrawFiend(); break;
+            case EnemyType.BossId: DrawPantelaaner(); break;
             default: DrawHustler(); break;
         }
     }
@@ -293,6 +294,45 @@ public partial class EnemyLook : ClassLook
         {
             DrawLine(V(0.8f, 2), V(2.2f, 4.2f), new Color(0.15f, 0.2f, 0.35f), 0.8f); // tattoos
             DrawLine(V(1.8f, 5.4f), V(3, 7), new Color(0.15f, 0.2f, 0.35f), 0.8f);
+        });
+    }
+
+    /// <summary>Pantelåneren, the pawnbroker who owns the street: heavy-set, bald, black beard, maroon velour
+    /// tracksuit, a dozen gold chains, a jeweller's loupe on his shades, a cigar, and a sledgehammer.</summary>
+    private void DrawPantelaaner()
+    {
+        var velour = new Color(0.42f, 0.08f, 0.14f);
+        var velourDark = new Color(0.28f, 0.05f, 0.09f);
+        var beard = new Color(0.1f, 0.07f, 0.06f);
+        Shadow();
+        Legs(velour, 1.8f);
+        DrawLine(V(-6.5f, 3), V(-7.5f, 17), new Color(0.9f, 0.85f, 0.8f), 0.7f); // tracksuit stripe
+        DrawLine(V(6.5f, 3), V(7.5f, 17), new Color(0.9f, 0.85f, 0.8f), 0.7f);
+        Shoes(new Color(0.95f, 0.95f, 0.95f), Gold);
+        // Big round belly in the track top.
+        DrawColoredPolygon(new[] { V(-11, -12), V(11, -12), V(13, -2), V(11.5f, 6), V(0, 8.5f), V(-11.5f, 6), V(-13, -2) }, velour);
+        DrawLine(V(0, -11.5f), V(0, 7.5f), velourDark, 0.8f); // zip
+        DrawCircle(V(0, -11), 1f, Gold);
+        foreach (var (r, y) in new[] { (5f, -14f), (7f, -14.5f), (9f, -15f), (11f, -15.5f) })
+            DrawArc(V(0, y), r, 0.35f, Mathf.Pi - 0.35f, 16, Gold, 1.3f);
+        DrawCircle(V(0, -3.5f), 2.8f, Gold); // medallion
+        DrawCircle(V(0, -3.5f), 1.4f, new Color(0.75f, 0.55f, 0.08f));
+        // Head: bald and shiny, big black beard, shades with a jeweller's loupe, cigar.
+        DrawRect(new Rect2(-2.5f, -15, 6, 3), _skin);
+        DrawCircle(V(1, -18.5f), 5.6f, _skin);
+        DrawCircle(V(-0.5f, -21.5f), 1.4f, new Color(1, 1, 1, 0.35f)); // shine
+        DrawColoredPolygon(new[] { V(-3.5f, -17), V(6.5f, -17), V(6, -13), V(2, -10.5f), V(-2.5f, -13) }, beard);
+        Shades(Gold);
+        DrawCircle(V(6.4f, -18.5f), 1.6f, Ink);
+        DrawCircle(V(6.4f, -18.5f), 0.9f, new Color(0.6f, 0.8f, 0.9f));
+        DrawLine(V(5, -14.8f), V(9.5f, -14), new Color(0.45f, 0.28f, 0.15f), 1.3f);
+        DrawCircle(V(9.8f, -14), 0.7f, new Color(1f, 0.45f, 0.1f));
+        Arm(velour, () =>
+        {
+            foreach (float y in new[] { 7.8f, 9.6f }) DrawRect(new Rect2(3.6f, y, 1.6f, 1f), Gold); // rings
+            DrawLine(V(4.6f, 11), V(6.5f, -9), new Color(0.5f, 0.35f, 0.2f), 1.6f); // hammer handle
+            DrawColoredPolygon(new[] { V(2.5f, -14.5f), V(11, -13), V(10.4f, -8), V(2, -9.4f) }, new Color(0.35f, 0.36f, 0.4f));
+            DrawLine(V(2.5f, -14.5f), V(11, -13), new Color(0.6f, 0.62f, 0.66f), 0.8f);
         });
     }
 

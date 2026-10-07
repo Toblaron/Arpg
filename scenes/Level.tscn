@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/Enemy.tscn" id="2_enemy"]
@@ -10,6 +10,9 @@
 [ext_resource type="Script" path="res://scripts/WaveUI.cs" id="8_waveui"]
 [ext_resource type="Script" path="res://scripts/Stage/StageDirector.cs" id="9_director"]
 [ext_resource type="Script" path="res://scripts/Stage/StreetBackdrop.cs" id="10_backdrop"]
+[ext_resource type="Script" path="res://scripts/Shop/KronerUI.cs" id="11_kroner"]
+[ext_resource type="Script" path="res://scripts/Shop/BossUI.cs" id="13_boss"]
+[ext_resource type="Script" path="res://scripts/Shop/ShopUI.cs" id="12_shop"]
 
 [node name="Level" type="Node2D"]
 
@@ -62,6 +65,20 @@ mouse_filter = 2
 script = ExtResource("6_abilityui")
 Player = NodePath("../../Player")
 
+[node name="KronerUI" type="Label" parent="UI" node_paths=PackedStringArray("Player")]
+offset_left = 16.0
+offset_top = 68.0
+offset_right = 316.0
+offset_bottom = 92.0
+script = ExtResource("11_kroner")
+Player = NodePath("../../Player")
+
+[node name="BossUI" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("13_boss")
+
 [node name="WaveUI" type="Control" parent="UI" node_paths=PackedStringArray("Spawner", "Director")]
 layout_mode = 3
 anchors_preset = 0
@@ -85,3 +102,10 @@ Equipment = NodePath("../../Player/Equipment")
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("5_tooltip")
+
+[node name="Shop" type="Control" parent="UI" node_paths=PackedStringArray("Player", "Director")]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("12_shop")
+Player = NodePath("../../Player")
+Director = NodePath("../../StageDirector")
